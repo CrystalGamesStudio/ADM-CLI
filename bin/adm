@@ -6,6 +6,8 @@ const { runInstallers } = require('../src/installers');
 const { connectGithub, listConnections, disconnect } = require('../src/commands/connect');
 const { listPRs, draftPR, commentPR } = require('../src/commands/pr');
 const { uninstall } = require('../src/commands/uninstall');
+const { readConfig } = require('../src/config');
+const { start: startAssistant } = require('../src/commands/assistant');
 
 const program = new Command();
 program
@@ -147,6 +149,30 @@ program
       process.exit(1);
     }
   });
+
+// ── adm assistant (or adm with no args) ────────────────────
+program
+  .command('assistant', { isDefault: true })
+  .description('Launch interactive assistant shell')
+  .option('--api-key <key>', 'GLM API key (overrides default)')
+  .action(async (opts) => {
+    try {
+      const config = await readConfig();
+      const context = {
+        apiKey: opts.apiKey || null,
+        config,
+      };
+      await startAssistant(context);
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// Handle --assistant flag by rewriting it to the default command
+if (process.argv.includes('--assistant')) {
+  process.argv = process.argv.filter(a => a !== '--assistant');
+}
 
 program.parseAsync(process.argv).catch(err => {
   console.error(chalk.red(err.message || err));

@@ -8,7 +8,7 @@ async function execute(args, context = {}) {
 
   const ai = context.ai;
   if (!ai) {
-    return { output: chalk.yellow('AI not configured. Set ANTHROPIC_API_KEY or run `adm setup`.'), shouldExit: false };
+    return { output: chalk.yellow('AI not configured. Set GLM_API_KEY or run `adm setup`.'), shouldExit: false };
   }
 
   const spinner = ora('Thinking...').start();

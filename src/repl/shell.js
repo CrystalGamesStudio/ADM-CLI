@@ -1,16 +1,21 @@
 const chalk = require('chalk');
 const helpHandler = require('./commands/help');
 const statusHandler = require('./commands/status');
+const aiHandler = require('./commands/ai');
+const prHandler = require('./commands/pr');
+const commitHandler = require('./commands/commit');
+const openHandler = require('./commands/open');
+const appHandler = require('./commands/app-launch');
 
 const BUILTIN_COMMANDS = [
   { name: 'help', description: 'Show command reference', handler: helpHandler },
   { name: 'exit', description: 'Exit the assistant', handler: () => ({ output: chalk.gray('Goodbye!'), shouldExit: true }) },
-  { name: 'ai', description: 'Ask AI a question', handler: () => ({ output: 'AI not configured', shouldExit: false }) },
+  { name: 'ai', description: 'Ask AI a question', handler: aiHandler },
   { name: 'status', description: 'Show git status and assigned issues', handler: statusHandler },
-  { name: 'pr', description: 'PR subcommands: list, draft', handler: () => ({ output: 'PR commands not available', shouldExit: false }) },
-  { name: 'commit', description: 'Commit subcommands: suggest', handler: () => ({ output: 'Commit commands not available', shouldExit: false }) },
-  { name: 'open', description: 'Clone repo or checkout branch', handler: () => ({ output: 'Open not available', shouldExit: false }) },
-  { name: 'app', description: 'App subcommands: launch', handler: () => ({ output: 'App commands not available', shouldExit: false }) },
+  { name: 'pr', description: 'PR subcommands: list, draft', handler: prHandler },
+  { name: 'commit', description: 'Commit subcommands: suggest', handler: commitHandler },
+  { name: 'open', description: 'Clone repo or checkout branch', handler: openHandler },
+  { name: 'app', description: 'App subcommands: launch', handler: appHandler },
 ];
 
 function createDispatcher(context = {}) {
@@ -39,4 +44,8 @@ function createDispatcher(context = {}) {
   return { dispatch, commands };
 }
 
-module.exports = { createDispatcher };
+function getCommandNames() {
+  return BUILTIN_COMMANDS.map(c => c.name);
+}
+
+module.exports = { createDispatcher, getCommandNames };

@@ -24,7 +24,7 @@ async function execute(args, context = {}) {
 
     const ai = context.ai;
     if (!ai) {
-      return { output: chalk.yellow('AI not configured. Set ANTHROPIC_API_KEY to use commit suggest.'), shouldExit: false };
+      return { output: chalk.yellow('AI not configured. Set GLM_API_KEY to use commit suggest.'), shouldExit: false };
     }
 
     try {

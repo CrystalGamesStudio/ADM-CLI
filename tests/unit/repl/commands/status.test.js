@@ -43,6 +43,6 @@ describe('status command', () => {
     const result = await statusHandler.execute('', { execSync: mockExec });
     expect(result.shouldExit).toBe(false);
     const plain = stripAnsi(result.output);
-    expect(plain).toMatch(/not a git repo/i);
+    expect(plain).toMatch(/not in a git repo/i);
   });
 });
