@@ -1,0 +1,154 @@
+#!/usr/bin/env node
+const { Command } = require('commander');
+const chalk = require('chalk');
+const { runSetup } = require('../src/setup/wizard');
+const { runInstallers } = require('../src/installers');
+const { connectGithub, listConnections, disconnect } = require('../src/commands/connect');
+const { listPRs, draftPR, commentPR } = require('../src/commands/pr');
+const { uninstall } = require('../src/commands/uninstall');
+
+const program = new Command();
+program
+  .name('adm')
+  .description('ADM developer CLI — setup, GitHub integration, and daily assistant')
+  .version('0.1.0');
+
+// ── adm setup ──────────────────────────────────────────────
+program
+  .command('setup')
+  .description('Run interactive setup wizard')
+  .option('--dry-run', 'Preview planned actions without executing')
+  .action(async (opts) => {
+    try {
+      const res = await runSetup({ dryRun: !!opts.dryRun });
+      if (opts.dryRun) console.log(JSON.stringify(res, null, 2));
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm installers ─────────────────────────────────────────
+program
+  .command('installers')
+  .description('Plan or run environment installers')
+  .option('--dry-run', 'Plan only, do not execute')
+  .option('--execute', 'Execute installers (requires ADM_EXECUTE=1)')
+  .action(async (opts) => {
+    const execute = !!opts.execute;
+    if (execute && process.env.ADM_EXECUTE !== '1') {
+      console.error(chalk.red('Refusing to execute: set ADM_EXECUTE=1 to confirm'));
+      process.exit(2);
+    }
+    try {
+      const res = await runInstallers({ dryRun: !!opts.dryRun, execute });
+      console.log(JSON.stringify(res, null, 2));
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm connect ────────────────────────────────────────────
+const connectCmd = program
+  .command('connect')
+  .description('Manage service connections');
+
+connectCmd
+  .command('github')
+  .description('Connect GitHub account (PAT token)')
+  .option('--token <token>', 'GitHub PAT token (will prompt if omitted)')
+  .action(async (opts) => {
+    try {
+      await connectGithub({ token: opts.token });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+connectCmd
+  .command('list')
+  .description('List connected services')
+  .action(async () => {
+    try {
+      await listConnections();
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+connectCmd
+  .command('disconnect <service>')
+  .description('Disconnect a service (github)')
+  .action(async (service) => {
+    try {
+      await disconnect(service);
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm pr ─────────────────────────────────────────────────
+const prCmd = program
+  .command('pr')
+  .description('Manage pull requests');
+
+prCmd
+  .command('list')
+  .description('List open pull requests')
+  .option('--repo <repo>', 'Filter by repo (owner/name)')
+  .option('--limit <n>', 'Max results', '20')
+  .action(async (opts) => {
+    try {
+      await listPRs({ repo: opts.repo, limit: parseInt(opts.limit, 10) });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+prCmd
+  .command('draft <title>')
+  .description('Create a draft PR from the current branch')
+  .option('--base <branch>', 'Base branch', 'main')
+  .action(async (title, opts) => {
+    try {
+      await draftPR(title, { base: opts.base });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+prCmd
+  .command('comment <pr> <message>')
+  .description('Comment on a pull request')
+  .action(async (pr, message) => {
+    try {
+      await commentPR(parseInt(pr, 10), message);
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm uninstall ──────────────────────────────────────────
+program
+  .command('uninstall')
+  .description('Remove ADM config and references')
+  .action(async () => {
+    try {
+      await uninstall();
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+program.parseAsync(process.argv).catch(err => {
+  console.error(chalk.red(err.message || err));
+  process.exit(1);
+});
