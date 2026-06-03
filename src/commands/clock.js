@@ -82,10 +82,25 @@ function startClock(config = {}) {
     lastKey = key;
   }
 
+  // ── stdin: raw mode — ukrywa wciśnięte klawisze ──────────
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', (buf) => {
+      const ch = buf.toString();
+      // q, Escape lub Ctrl+C → wyjście
+      if (ch === 'q' || ch === '\x1B' || ch === '\x03') cleanup();
+    });
+  }
+
   // Align to second boundary
   setTimeout(() => { tick(); setInterval(tick, 1000); }, 1000 - Date.now() % 1000);
 
   function cleanup() {
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+    }
     process.stdout.write('\x1B[?25h\x1B[?1049l');
     process.exit(0);
   }

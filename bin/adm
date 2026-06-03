@@ -3,8 +3,11 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const { runSetup } = require('../src/setup/wizard');
 const { runInstallers } = require('../src/installers');
-const { connectGithub, listConnections, disconnect } = require('../src/commands/connect');
+const { connectGithub, connectGitlab, listConnections, disconnect } = require('../src/commands/connect');
 const { listPRs, draftPR, commentPR } = require('../src/commands/pr');
+const { listMRs, draftMR, commentMR } = require('../src/commands/mr');
+const { listIssues } = require('../src/commands/issue');
+const { syncDotfilesCommand } = require('../src/commands/dotfiles');
 const { uninstall } = require('../src/commands/uninstall');
 const { readConfig } = require('../src/config');
 const { start: startAssistant } = require('../src/commands/assistant');
@@ -73,6 +76,19 @@ connectCmd
   });
 
 connectCmd
+  .command('gitlab')
+  .description('Connect GitLab account (access token)')
+  .option('--token <token>', 'GitLab access token (will prompt if omitted)')
+  .action(async (opts) => {
+    try {
+      await connectGitlab({ token: opts.token });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+connectCmd
   .command('list')
   .description('List connected services')
   .action(async () => {
@@ -134,6 +150,87 @@ prCmd
   .action(async (pr, message) => {
     try {
       await commentPR(parseInt(pr, 10), message);
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm mr ─────────────────────────────────────────────────
+const mrCmd = program
+  .command('mr')
+  .description('Manage merge requests (GitLab)');
+
+mrCmd
+  .command('list')
+  .description('List open merge requests')
+  .option('--limit <n>', 'Max results', '20')
+  .action(async (opts) => {
+    try {
+      await listMRs({ limit: parseInt(opts.limit, 10) });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+mrCmd
+  .command('draft <title>')
+  .description('Create a draft MR on GitLab')
+  .option('--project-id <id>', 'GitLab project ID')
+  .option('--source-branch <branch>', 'Source branch')
+  .action(async (title, opts) => {
+    try {
+      await draftMR(title, { projectId: parseInt(opts.projectId, 10), sourceBranch: opts.sourceBranch });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+mrCmd
+  .command('comment <mr> <message>')
+  .description('Comment on a merge request')
+  .option('--project-id <id>', 'GitLab project ID')
+  .action(async (mr, message, opts) => {
+    try {
+      await commentMR(parseInt(mr, 10), message, { projectId: parseInt(opts.projectId, 10) });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm issue ──────────────────────────────────────────────
+program
+  .command('issue-list')
+  .description('List issues from connected platforms (GitHub / GitLab)')
+  .option('--platform <platform>', 'Filter by platform (github / gitlab)')
+  .option('--limit <n>', 'Max results', '20')
+  .action(async (opts) => {
+    try {
+      await listIssues({ platform: opts.platform, limit: parseInt(opts.limit, 10) });
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm dotfiles ─────────────────────────────────────────────
+const dotfilesCmd = program
+  .command('dotfiles')
+  .description('Manage dotfiles sync');
+
+dotfilesCmd
+  .command('sync')
+  .description('Clone/pull dotfiles repo and symlink files')
+  .option('--repo <url>', 'Dotfiles repo URL (overrides config)')
+  .option('--copy', 'Copy files instead of symlinking')
+  .option('--only <files>', 'Sync only specified files (comma-separated, e.g. bashrc,zshrc)')
+  .action(async (opts) => {
+    try {
+      const only = opts.only ? opts.only.split(',') : undefined;
+      await syncDotfilesCommand({ repo: opts.repo, copy: opts.copy, only });
     } catch (err) {
       console.error(chalk.red(err.message));
       process.exit(1);
@@ -212,6 +309,26 @@ program
 if (process.argv.includes('--assistant')) {
   process.argv = process.argv.filter(a => a !== '--assistant');
 }
+
+// ── Plugin fallback: nieznana komenda → sprawdź wtyczki ──
+const { tryRunPlugin } = require('../src/plugins/runner');
+
+program.on('command:*', async (operands) => {
+  const cmdName = operands[0];
+  const args = operands.slice(1).join(' ');
+  try {
+    const output = await tryRunPlugin(cmdName, args);
+    if (output !== null) {
+      console.log(output);
+      return;
+    }
+    console.error(chalk.red(`Unknown command: ${cmdName}. Run ${chalk.bold('adm --help')} for available commands.`));
+    process.exit(1);
+  } catch (err) {
+    console.error(chalk.red(err.message));
+    process.exit(1);
+  }
+});
 
 program.parseAsync(process.argv).catch(err => {
   console.error(chalk.red(err.message || err));
