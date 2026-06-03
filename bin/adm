@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const { Command } = require('commander');
 const chalk = require('chalk');
+const { handleAdmError, formatError } = require('../src/utils/error-handler');
 const { runSetup } = require('../src/setup/wizard');
 const { runInstallers } = require('../src/installers');
 const { connectGithub, connectGitlab, listConnections, disconnect } = require('../src/commands/connect');
@@ -21,6 +22,12 @@ program
   .description('ADM developer CLI — setup, GitHub integration, and daily assistant')
   .version('0.1.0');
 
+function exitWithError(err) {
+  const admErr = handleAdmError(err);
+  console.error(chalk.red(formatError(admErr)));
+  process.exit(admErr.exitCode);
+}
+
 // ── adm setup ──────────────────────────────────────────────
 program
   .command('setup')
@@ -31,8 +38,7 @@ program
       const res = await runSetup({ dryRun: !!opts.dryRun });
       if (opts.dryRun) console.log(JSON.stringify(res, null, 2));
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -52,8 +58,7 @@ program
       const res = await runInstallers({ dryRun: !!opts.dryRun, execute });
       console.log(JSON.stringify(res, null, 2));
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -70,8 +75,7 @@ connectCmd
     try {
       await connectGithub({ token: opts.token });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -83,8 +87,7 @@ connectCmd
     try {
       await connectGitlab({ token: opts.token });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -95,8 +98,7 @@ connectCmd
     try {
       await listConnections();
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -107,8 +109,7 @@ connectCmd
     try {
       await disconnect(service);
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -126,8 +127,7 @@ prCmd
     try {
       await listPRs({ repo: opts.repo, limit: parseInt(opts.limit, 10) });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -139,8 +139,7 @@ prCmd
     try {
       await draftPR(title, { base: opts.base });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -151,8 +150,7 @@ prCmd
     try {
       await commentPR(parseInt(pr, 10), message);
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -169,8 +167,7 @@ mrCmd
     try {
       await listMRs({ limit: parseInt(opts.limit, 10) });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -183,8 +180,7 @@ mrCmd
     try {
       await draftMR(title, { projectId: parseInt(opts.projectId, 10), sourceBranch: opts.sourceBranch });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -196,8 +192,7 @@ mrCmd
     try {
       await commentMR(parseInt(mr, 10), message, { projectId: parseInt(opts.projectId, 10) });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -211,8 +206,7 @@ program
     try {
       await listIssues({ platform: opts.platform, limit: parseInt(opts.limit, 10) });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -232,8 +226,7 @@ dotfilesCmd
       const only = opts.only ? opts.only.split(',') : undefined;
       await syncDotfilesCommand({ repo: opts.repo, copy: opts.copy, only });
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -255,8 +248,7 @@ clockCmd
     try {
       await clockThemePicker();
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -268,8 +260,7 @@ program
     try {
       await themeCommand();
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
@@ -281,14 +272,13 @@ program
     try {
       await uninstall();
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
-// ── adm assistant (or adm with no args) ────────────────────
+// ── adm assistant (default when no args) ────────────────────
 program
-  .command('assistant', { isDefault: true })
+  .command('assistant')
   .description('Launch interactive assistant shell')
   .option('--api-key <key>', 'GLM API key (overrides default)')
   .action(async (opts) => {
@@ -300,14 +290,19 @@ program
       };
       await startAssistant(context);
     } catch (err) {
-      console.error(chalk.red(err.message));
-      process.exit(1);
+      exitWithError(err);
     }
   });
 
 // Handle --assistant flag by rewriting it to the default command
 if (process.argv.includes('--assistant')) {
   process.argv = process.argv.filter(a => a !== '--assistant');
+}
+
+// Default to assistant when no subcommand given (but not for unknown commands)
+const firstArg = process.argv[2];
+if (!firstArg) {
+  process.argv.splice(2, 0, 'assistant');
 }
 
 // ── Plugin fallback: nieznana komenda → sprawdź wtyczki ──
@@ -325,12 +320,10 @@ program.on('command:*', async (operands) => {
     console.error(chalk.red(`Unknown command: ${cmdName}. Run ${chalk.bold('adm --help')} for available commands.`));
     process.exit(1);
   } catch (err) {
-    console.error(chalk.red(err.message));
-    process.exit(1);
+    exitWithError(err);
   }
 });
 
 program.parseAsync(process.argv).catch(err => {
-  console.error(chalk.red(err.message || err));
-  process.exit(1);
+  exitWithError(err);
 });

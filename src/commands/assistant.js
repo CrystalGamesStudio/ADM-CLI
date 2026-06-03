@@ -34,6 +34,46 @@ async function start(context = {}) {
     config: context.config || {},
   });
 
+  // Register handlers FIRST so no input events are missed
+  rl.on('line', async (line) => {
+    try {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        rl.prompt();
+        return;
+      }
+
+      const result = await dispatcher.dispatch(line);
+      if (result.output) console.log(result.output);
+
+      try {
+        await saveCommand(trimmed);
+      } catch {
+        // History save is non-critical
+      }
+
+      if (result.shouldExit) {
+        process.exit(0);
+      }
+    } catch (err) {
+      console.log(chalk.red(`Error: ${err.message}`));
+    }
+
+    // Guard: readline may have been closed by Ctrl+C during async operation
+    if (!rl.closed) {
+      rl.prompt();
+    }
+  });
+
+  rl.on('close', () => {
+    // Only exit if readline closes and no async operation is keeping us alive.
+    // In interactive mode this fires on Ctrl+D; in piped mode on stdin EOF.
+    // The async line handler will keep the event loop alive until it finishes.
+    if (!rl.closed) return;
+    process.exit(0);
+  });
+
+  // Async setup — load history, print banner
   try {
     const history = await loadHistory();
     if (history.length > 0) {
@@ -45,22 +85,6 @@ async function start(context = {}) {
 
   console.log(chalk.hex(c.primary).bold('\nADM Assistant') + chalk.hex(c.muted)(' — type "help" for commands, "exit" to quit.\n'));
   rl.prompt();
-
-  rl.on('line', async (line) => {
-    const result = await dispatcher.dispatch(line);
-    if (result.output) console.log(result.output);
-    if (line.trim()) await saveCommand(line.trim());
-    if (result.shouldExit) {
-      rl.close();
-      return;
-    }
-    rl.prompt();
-  });
-
-  rl.on('close', () => {
-    console.log(chalk.hex(c.muted)('\nGoodbye!'));
-    process.exit(0);
-  });
 }
 
 function completer(line) {
