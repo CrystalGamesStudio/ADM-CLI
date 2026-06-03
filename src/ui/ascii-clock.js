@@ -35,11 +35,4 @@ function renderClock(date = new Date()) {
   return pad(lines, maxLen);
 }
 
-function renderFrame(date, quote = null) {
-  return {
-    lines: renderClock(date),
-    quote: quote || null,
-  };
-}
-
-module.exports = { renderClock, renderFrame };
+module.exports = { renderClock };

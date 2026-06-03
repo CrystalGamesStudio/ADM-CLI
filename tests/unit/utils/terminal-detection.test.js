@@ -2,7 +2,6 @@
  * Assumptions:
  * - detectColorSupport() returns boolean
  * - isDarkMode() returns boolean (best-guess from env)
- * - shouldEnableAnimations() returns boolean (false if CI, no-TTY, or config.animations=false)
  * - isCI() returns boolean (checks CI=true, or common CI env vars)
  * - isTTY() returns boolean (checks process.stdout.isTTY)
  *
@@ -14,7 +13,6 @@
 const {
   detectColorSupport,
   isDarkMode,
-  shouldEnableAnimations,
   isCI,
   isTTY,
 } = require('../../../src/utils/terminal-detection');
@@ -80,37 +78,6 @@ describe('Terminal detection', () => {
     test('returns true when COLORFGBG indicates dark background', () => {
       process.env.COLORFGBG = '15;0';
       expect(isDarkMode()).toBe(true);
-    });
-  });
-
-  describe('shouldEnableAnimations', () => {
-    test('returns false when running in CI', () => {
-      process.env.CI = 'true';
-      expect(shouldEnableAnimations()).toBe(false);
-    });
-
-    test('returns false when config disables animations', () => {
-      delete process.env.CI;
-      expect(shouldEnableAnimations({ animations: false })).toBe(false);
-    });
-
-    test('returns true when TTY present, not CI, and animations enabled', () => {
-      delete process.env.CI;
-      delete process.env.TF_BUILD;
-      delete process.env.GITHUB_ACTIONS;
-      delete process.env.JENKINS_URL;
-      delete process.env.BUILDKITE;
-      delete process.env.TRAVIS;
-      delete process.env.CIRCLECI;
-      delete process.env.GITLAB_CI;
-      const original = process.stdout.isTTY;
-      Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
-      expect(shouldEnableAnimations({ animations: true })).toBe(true);
-      if (original === undefined) {
-        delete process.stdout.isTTY;
-      } else {
-        Object.defineProperty(process.stdout, 'isTTY', { value: original, configurable: true });
-      }
     });
   });
 

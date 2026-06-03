@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
 const { renderClock } = require('./ascii-clock');
-const { getRandomQuote } = require('../utils/quotes');
 const { resolveTheme } = require('./theme');
 const { createSpinner } = require('./spinner');
 const {
@@ -9,7 +8,6 @@ const {
   isDarkMode,
   isCI,
   isTTY,
-  shouldEnableAnimations,
 } = require('../utils/terminal-detection');
 
 console.log(chalk.bold('\n=== ADM-CLI Phase 4: Vibe Features Demo ===\n'));
@@ -20,7 +18,6 @@ console.log(`  Color support: ${detectColorSupport() ? chalk.green('yes') : chal
 console.log(`  Dark mode:     ${isDarkMode() ? 'yes' : 'no'}`);
 console.log(`  TTY:           ${isTTY() ? 'yes' : 'no'}`);
 console.log(`  CI:            ${isCI() ? 'yes' : 'no'}`);
-console.log(`  Animations:    ${shouldEnableAnimations({ animations: true }) ? 'enabled' : 'disabled'}`);
 
 // 2. Theme
 console.log(chalk.cyan('\n--- Theme (dark) ---'));
@@ -49,13 +46,7 @@ const timeStr = now.toLocaleTimeString();
 console.log(chalk.hex(dark.colors.primary)(lines.join('\n')));
 console.log(chalk.gray(`  ${timeStr}`));
 
-// 4. Quote
-console.log(chalk.cyan('\n--- Random Dev Quote ---'));
-const quote = getRandomQuote();
-console.log(chalk.italic(`  "${quote.text}"`));
-console.log(chalk.gray(`  — ${quote.author}`));
-
-// 5. Spinner
+// 4. Spinner
 console.log(chalk.cyan('\n--- Spinner Demo ---'));
 const spinner = createSpinner('Loading something...', { isEnabled: true });
 spinner.start();

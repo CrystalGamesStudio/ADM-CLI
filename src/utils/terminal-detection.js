@@ -23,11 +23,4 @@ function isDarkMode() {
   return bg < 8;
 }
 
-function shouldEnableAnimations(config = {}) {
-  if (isCI()) return false;
-  if (config.animations === false) return false;
-  if (!isTTY()) return false;
-  return true;
-}
-
-module.exports = { detectColorSupport, isDarkMode, shouldEnableAnimations, isCI, isTTY };
+module.exports = { detectColorSupport, isDarkMode, isCI, isTTY };

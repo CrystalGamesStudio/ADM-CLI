@@ -1,7 +1,19 @@
 const darkTheme = require('./theme/dark');
 const lightTheme = require('./theme/light');
+const cyberpunkTheme = require('./theme/cyberpunk');
+const nordTheme = require('./theme/nord');
+const forestTheme = require('./theme/forest');
+const monokaiTheme = require('./theme/monokai');
+const { isDarkMode } = require('../utils/terminal-detection');
 
-const presets = { dark: darkTheme, light: lightTheme };
+const presets = {
+  dark: darkTheme,
+  light: lightTheme,
+  cyberpunk: cyberpunkTheme,
+  nord: nordTheme,
+  forest: forestTheme,
+  monokai: monokaiTheme,
+};
 
 function getTheme(name) {
   const theme = presets[name];
@@ -9,11 +21,15 @@ function getTheme(name) {
   return theme;
 }
 
+function listThemes() {
+  return Object.values(presets);
+}
+
 function resolveTheme(config = {}) {
   const { theme } = config;
 
   if (!theme || theme === 'auto') {
-    return darkTheme;
+    return isDarkMode() ? darkTheme : lightTheme;
   }
 
   if (typeof theme === 'string') {
@@ -30,4 +46,4 @@ function resolveTheme(config = {}) {
   return darkTheme;
 }
 
-module.exports = { resolveTheme, getTheme };
+module.exports = { resolveTheme, getTheme, listThemes };

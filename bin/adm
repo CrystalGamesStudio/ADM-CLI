@@ -8,6 +8,9 @@ const { listPRs, draftPR, commentPR } = require('../src/commands/pr');
 const { uninstall } = require('../src/commands/uninstall');
 const { readConfig } = require('../src/config');
 const { start: startAssistant } = require('../src/commands/assistant');
+const { startClock } = require('../src/commands/clock');
+const { themeCommand } = require('../src/commands/theme');
+const { clockThemePicker } = require('../src/commands/clock-theme');
 
 const program = new Command();
 program
@@ -131,6 +134,42 @@ prCmd
   .action(async (pr, message) => {
     try {
       await commentPR(parseInt(pr, 10), message);
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm clock ───────────────────────────────────────────────
+const clockCmd = program
+  .command('clock')
+  .description('ASCII clock');
+
+clockCmd
+  .action(async () => {
+    const config = await readConfig();
+    startClock(config);
+  });
+
+clockCmd
+  .command('theme')
+  .description('Pick clock accent color')
+  .action(async () => {
+    try {
+      await clockThemePicker();
+    } catch (err) {
+      console.error(chalk.red(err.message));
+      process.exit(1);
+    }
+  });
+
+// ── adm theme ───────────────────────────────────────────────
+program
+  .command('theme')
+  .description('Choose a color theme')
+  .action(async () => {
+    try {
+      await themeCommand();
     } catch (err) {
       console.error(chalk.red(err.message));
       process.exit(1);

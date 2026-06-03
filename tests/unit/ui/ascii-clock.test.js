@@ -6,9 +6,8 @@
  * - Can pass a Date for deterministic testing
  * - Uses box-drawing characters, not figlet
  * - Shows HH:MM:SS
- * - renderFrame(date, quote?) returns { lines: string[], quote: object|null }
  */
-const { renderClock, renderFrame } = require('../../../src/ui/ascii-clock');
+const { renderClock } = require('../../../src/ui/ascii-clock');
 
 describe('ASCII Clock', () => {
   test('renderClock returns array of strings', () => {
@@ -31,20 +30,7 @@ describe('ASCII Clock', () => {
     expect(a).toEqual(b);
   });
 
-  test('renderFrame returns lines and optional quote', () => {
-    const frame = renderFrame(new Date(2026, 0, 1, 12, 0, 0), { text: 'Hello', author: 'World' });
-    expect(Array.isArray(frame.lines)).toBe(true);
-    expect(frame.quote).toEqual({ text: 'Hello', author: 'World' });
-  });
-
-  test('renderFrame works without quote', () => {
-    const frame = renderFrame(new Date(2026, 0, 1, 12, 0, 0));
-    expect(Array.isArray(frame.lines)).toBe(true);
-    expect(frame.quote).toBeNull();
-  });
-
   test('renderClock output contains digits for the time', () => {
-    // Render 23:59:59 and verify the output is non-trivial (has content)
     const lines = renderClock(new Date(2026, 0, 1, 23, 59, 59));
     const text = lines.join('');
     expect(text.length).toBeGreaterThan(20);

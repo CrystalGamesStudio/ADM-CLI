@@ -3,15 +3,22 @@ const chalk = require('chalk');
 const { createDispatcher, getCommandNames } = require('../repl/shell');
 const { saveCommand, loadHistory } = require('../utils/command-history');
 const { matchCommands } = require('../utils/fuzzy-search');
+const { resolveTheme } = require('../ui/theme');
 const ai = require('../integrations/ai-backend');
 
 const DEFAULT_API_KEY = '34e301f7a5a04754bb7cbb0b0b7bdcc6.3TvbIZ2wlZwB5fTR';
 
 async function start(context = {}) {
+  const config = context.config || {};
+  const theme = resolveTheme(config);
+  const c = theme.colors;
+
+  const promptStr = chalk.hex(c.primary).bold('adm') + chalk.hex(c.muted)('> ');
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: chalk.cyan('adm> '),
+    prompt: promptStr,
     completer,
     historySize: 100,
     removeHistoryDuplicates: true,
@@ -36,7 +43,7 @@ async function start(context = {}) {
     // History loading is non-critical
   }
 
-  console.log(chalk.bold('\nADM Assistant — type "help" for commands, "exit" to quit.\n'));
+  console.log(chalk.hex(c.primary).bold('\nADM Assistant') + chalk.hex(c.muted)(' — type "help" for commands, "exit" to quit.\n'));
   rl.prompt();
 
   rl.on('line', async (line) => {
@@ -51,7 +58,7 @@ async function start(context = {}) {
   });
 
   rl.on('close', () => {
-    console.log(chalk.gray('\nGoodbye!'));
+    console.log(chalk.hex(c.muted)('\nGoodbye!'));
     process.exit(0);
   });
 }
