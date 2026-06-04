@@ -10,7 +10,7 @@ const DIGITS = {
   '8': [' █████ ', '██   ██', ' █████ ', '██   ██', ' █████ '],
   '9': [' █████ ', '██   ██', ' ██████', '     ██', ' █████ '],
 };
-const COLON = ['   ', '██ ', '   ', '██ ', '   '];
+const COLON = ['       ', '   █   ', '       ', '   █   ', '       '];
 
 function pad(arr, width) {
   return arr.map(line => line.padEnd(width));

@@ -81,6 +81,16 @@ function createAppState() {
       return result;
     }
 
+    if (result.shouldRunClock) {
+      state.runClock = true;
+      return result;
+    }
+
+    if (result.shouldRunClockTheme) {
+      state.runClockTheme = true;
+      return result;
+    }
+
     if (result.output) {
       state.messages.push({ text: result.output, type: 'command' });
     }
@@ -97,6 +107,11 @@ function createAppState() {
   function exitSetup() {
     state.showSetup = false;
     state.setupDryRun = false;
+  }
+
+  function clearClockFlags() {
+    state.runClock = false;
+    state.runClockTheme = false;
   }
 
   function markSetupDone() {
@@ -124,10 +139,15 @@ function createAppState() {
     get aiMode() { return state.aiMode; },
     get showSetup() { return state.showSetup; },
     get setupDryRun() { return state.setupDryRun; },
+    get runClock() { return state.runClock; },
+    set runClock(v) { state.runClock = v; },
+    get runClockTheme() { return state.runClockTheme; },
+    set runClockTheme(v) { state.runClockTheme = v; },
     processInput,
     getStatusBar,
     exitAI,
     exitSetup,
+    clearClockFlags,
     markSetupDone,
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,

@@ -13,6 +13,15 @@ const BUILTIN_COMMANDS = [
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
   { name: 'model', description: 'Show or switch AI provider' },
   { name: 'setup', description: 'Launch extension setup wizard' },
+  { name: 'connect', description: 'Connect to GitHub or GitLab' },
+  { name: 'pr', description: 'Pull request operations' },
+  { name: 'mr', description: 'Merge request operations (GitLab)' },
+  { name: 'issue', description: 'List issues from connected platform' },
+  { name: 'commit', description: 'Commit subcommands: suggest' },
+  { name: 'clock', description: 'Show ASCII clock' },
+  { name: 'dotfiles', description: 'Sync dotfiles from repo' },
+  { name: 'uninstall', description: 'Remove ADM CLI config' },
+  { name: 'plugins', description: 'List loaded plugins' },
 ];
 
 function createRegistry(context = {}) {
@@ -34,6 +43,10 @@ function createRegistry(context = {}) {
 
     const cmd = commands.get(cmdName);
     if (!cmd) {
+      // Try plugin fallback before reporting unknown command
+      const pluginResult = await dispatchPlugin(cmdName, args, context);
+      if (pluginResult) return pluginResult;
+
       const suggestion = findClosestMatch(cmdName, commands);
       let msg = chalk.red(`Unknown command: /${cmdName}.`);
       if (suggestion) {
@@ -55,7 +68,7 @@ function createRegistry(context = {}) {
       return dispatchHelp(commands);
     }
     if (cmdName === 'theme') {
-      return dispatchTheme(args, context);
+      return await dispatchTheme(args, context);
     }
     if (cmdName === 'config') {
       return await dispatchConfig();
@@ -71,6 +84,33 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'setup') {
       return dispatchSetup(args);
+    }
+    if (cmdName === 'connect') {
+      return await dispatchConnect(args, context);
+    }
+    if (cmdName === 'pr') {
+      return await dispatchPr(args, context);
+    }
+    if (cmdName === 'mr') {
+      return await dispatchMr(args, context);
+    }
+    if (cmdName === 'issue') {
+      return await dispatchIssue(args, context);
+    }
+    if (cmdName === 'commit') {
+      return await dispatchCommit(args, context);
+    }
+    if (cmdName === 'clock') {
+      return dispatchClock(args, context);
+    }
+    if (cmdName === 'dotfiles') {
+      return await dispatchDotfiles(args, context);
+    }
+    if (cmdName === 'uninstall') {
+      return await dispatchUninstall(context);
+    }
+    if (cmdName === 'plugins') {
+      return dispatchPlugins(context);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -94,7 +134,7 @@ function dispatchHelp(commands) {
   return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
 }
 
-function dispatchTheme(args, context) {
+async function dispatchTheme(args, context) {
   if (!args) {
     const themes = listThemes();
     const lines = [chalk.bold('Available themes:\n')];
@@ -109,6 +149,10 @@ function dispatchTheme(args, context) {
   try {
     getTheme(args); // throws if not found
     if (context.theme) context.theme.current = args;
+    // Persist theme selection to config
+    const config = await readConfig();
+    config.theme = args;
+    await writeConfig(config);
     return {
       output: chalk.green(`Theme switched to ${chalk.bold(args)}.`),
       shouldExit: false,
@@ -270,4 +314,395 @@ function dispatchSetup(args) {
     shouldClear: false,
     dryRun: isDryRun,
   };
+}
+
+// ─── /connect ──────────────────────────────────────────────
+async function dispatchConnect(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return {
+      output: chalk.yellow('Usage: /connect <github|gitlab|list|disconnect> [--token <token>]'),
+      shouldExit: false,
+      shouldClear: false,
+    };
+  }
+
+  if (subcommand === 'list') {
+    const { listStoredServices: listFn } = require('../../utils/keychain');
+    const services = await (context.listStoredServices || listFn)();
+    if (services.length === 0) {
+      return { output: chalk.yellow('No connected services.'), shouldExit: false, shouldClear: false };
+    }
+    const lines = services.map(s => `  ${chalk.green(s)}: connected`);
+    return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+  }
+
+  // Parse --token flag
+  const tokenFlagIdx = parts.indexOf('--token');
+  const token = tokenFlagIdx !== -1 && parts[tokenFlagIdx + 1] ? parts[tokenFlagIdx + 1] : null;
+
+  if (subcommand === 'github') {
+    if (!token) {
+      return {
+        output: chalk.yellow('Enter your GitHub PAT: /connect github --token <token>'),
+        shouldExit: false,
+        shouldClear: false,
+        shouldPromptToken: 'github',
+      };
+    }
+    try {
+      const gh = require('../../integrations/github');
+      const result = await gh.connect(token);
+      return {
+        output: chalk.green(`Connected to GitHub as ${chalk.bold(result.user.login)}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'gitlab') {
+    if (!token) {
+      return {
+        output: chalk.yellow('Enter your GitLab access token: /connect gitlab --token <token>'),
+        shouldExit: false,
+        shouldClear: false,
+        shouldPromptToken: 'gitlab',
+      };
+    }
+    try {
+      const gl = require('../../integrations/gitlab');
+      const result = await gl.connect(token);
+      return {
+        output: chalk.green(`Connected to GitLab as ${chalk.bold(result.user.username)}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'disconnect') {
+    const service = parts[1];
+    if (!service) {
+      return { output: chalk.yellow('Usage: /connect disconnect <github|gitlab>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      if (service === 'github') {
+        const gh = require('../../integrations/github');
+        await gh.disconnect();
+      } else if (service === 'gitlab') {
+        const gl = require('../../integrations/gitlab');
+        await gl.disconnect();
+      }
+      return { output: chalk.green(`${service} disconnected.`), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown connect subcommand: ${subcommand}. Use: github, gitlab, list, disconnect`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /pr ───────────────────────────────────────────────────
+async function dispatchPr(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return { output: chalk.yellow('Usage: /pr <list|draft|comment>'), shouldExit: false, shouldClear: false };
+  }
+
+  const gh = require('../../integrations/github');
+
+  if (subcommand === 'list') {
+    try {
+      const prs = await gh.listPRs();
+      if (prs.length === 0) {
+        return { output: chalk.yellow('No open pull requests found.'), shouldExit: false, shouldClear: false };
+      }
+      const lines = prs.map(pr =>
+        `  ${chalk.bold(`#${pr.number}`)} ${pr.title} ${chalk.gray(`(${pr.repo})`)} ${chalk.green(pr.state)}\n    ${chalk.gray(pr.url)}`
+      );
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'draft') {
+    const title = parts.slice(1).join(' ');
+    if (!title) {
+      return { output: chalk.yellow('Usage: /pr draft <title>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      const result = await gh.createDraftPR(title);
+      return {
+        output: chalk.green(`Draft PR #${result.number} created\n  ${chalk.gray(result.url)}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'comment') {
+    const prNumber = parts[1];
+    const message = parts.slice(2).join(' ');
+    if (!prNumber || !message) {
+      return { output: chalk.yellow('Usage: /pr comment <number> <message>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      const result = await gh.commentOnPR(prNumber, message);
+      return {
+        output: chalk.green(`Comment added to PR #${prNumber}\n  ${chalk.gray(result.url)}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown PR subcommand: ${subcommand}. Use: list, draft, comment`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /mr ───────────────────────────────────────────────────
+async function dispatchMr(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return { output: chalk.yellow('Usage: /mr <list|draft|comment>'), shouldExit: false, shouldClear: false };
+  }
+
+  const gl = require('../../integrations/gitlab');
+
+  if (subcommand === 'list') {
+    try {
+      const mrs = await gl.listMRs();
+      if (mrs.length === 0) {
+        return { output: chalk.yellow('No open merge requests found.'), shouldExit: false, shouldClear: false };
+      }
+      const lines = mrs.map(mr =>
+        `  ${chalk.bold(`!${mr.iid}`)} ${mr.title}\n    ${chalk.gray(mr.url)}`
+      );
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'draft') {
+    const title = parts.slice(1).join(' ');
+    if (!title) {
+      return { output: chalk.yellow('Usage: /mr draft <title>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      const result = await gl.createDraftMR(title);
+      return {
+        output: chalk.green(`Draft MR created: ${result.url}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'comment') {
+    const mrIid = parts[1];
+    const message = parts.slice(2).join(' ');
+    if (!mrIid || !message) {
+      return { output: chalk.yellow('Usage: /mr comment <iid> <message>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      await gl.commentOnMR(mrIid, message);
+      return { output: chalk.green(`Comment added to MR !${mrIid}`), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown MR subcommand: ${subcommand}. Use: list, draft, comment`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /issue ────────────────────────────────────────────────
+async function dispatchIssue(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand || subcommand === 'list') {
+    try {
+      const { listStoredServices: listFn } = require('../../utils/keychain');
+      const services = await (context.listStoredServices || listFn)();
+      const platforms = services.filter(s => ['github', 'gitlab'].includes(s));
+      if (platforms.length === 0) {
+        return { output: chalk.yellow('No connected platforms. Use /connect github or /connect gitlab.'), shouldExit: false, shouldClear: false };
+      }
+
+      const platform = platforms[0];
+
+      if (platform === 'gitlab') {
+        const gl = require('../../integrations/gitlab');
+        const issues = await gl.listIssues();
+        if (issues.length === 0) {
+          return { output: chalk.yellow('No issues found.'), shouldExit: false, shouldClear: false };
+        }
+        const lines = issues.map(i => `  ${chalk.bold(`#${i.iid}`)} ${i.title}\n    ${chalk.gray(i.url)}`);
+        return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+      }
+
+      // GitHub
+      const gh = require('../../integrations/github');
+      const octokit = await gh.getClient();
+      const { data: user } = await octokit.users.getAuthenticated();
+      const { data } = await octokit.search.issuesAndPullRequests({
+        q: `author:${user.login} is:issue is:open`,
+        sort: 'updated',
+        order: 'desc',
+        per_page: 20,
+      });
+      const issues = data.items.map(issue => ({
+        iid: issue.number,
+        title: issue.title,
+        state: issue.state,
+        url: issue.html_url,
+      }));
+      if (issues.length === 0) {
+        return { output: chalk.yellow('No issues found.'), shouldExit: false, shouldClear: false };
+      }
+      const lines = issues.map(i => `  ${chalk.bold(`#${i.iid}`)} ${i.title}\n    ${chalk.gray(i.url)}`);
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown issue subcommand: ${subcommand}. Use: list`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /commit ───────────────────────────────────────────────
+async function dispatchCommit(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return { output: chalk.yellow('Usage: /commit <suggest>'), shouldExit: false, shouldClear: false };
+  }
+
+  if (subcommand === 'suggest') {
+    const exec = context.execSync || require('child_process').execSync;
+    let diff;
+    try {
+      diff = exec('git diff --cached', { encoding: 'utf8' }).trim();
+    } catch {
+      return { output: chalk.yellow('Not in a git repo.'), shouldExit: false, shouldClear: false };
+    }
+
+    if (!diff) {
+      return { output: chalk.yellow('No staged changes. Use `git add` to stage files first.'), shouldExit: false, shouldClear: false };
+    }
+
+    const ai = context.ai;
+    if (!ai) {
+      return { output: chalk.yellow('AI not configured. Set GLM_API_KEY to use commit suggest.'), shouldExit: false, shouldClear: false };
+    }
+
+    try {
+      const prompt = `Based on this git diff, suggest a concise commit message (just the subject line, under 72 chars, using conventional commits format):\n\n${diff}`;
+      const message = await ai.query(prompt);
+      return { output: `${chalk.bold('Suggested commit message:')}\n  ${message}`, shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown commit subcommand: ${subcommand}. Use: suggest`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /clock ────────────────────────────────────────────────
+function dispatchClock(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (subcommand === 'theme') {
+    return { shouldRunClockTheme: true, shouldExit: false, shouldClear: false };
+  }
+
+  return { shouldRunClock: true, shouldExit: false, shouldClear: false };
+}
+
+// ─── /dotfiles ─────────────────────────────────────────────
+async function dispatchDotfiles(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand || subcommand === 'sync') {
+    try {
+      const { syncDotfilesCommand } = require('../../commands/dotfiles');
+      const result = await syncDotfilesCommand({ repo: parts[1] });
+      const total = result.symlinked.length + result.copied.length;
+      const lines = [chalk.green(`Synced ${total} files.`)];
+      if (result.skipped.length > 0) {
+        lines.push(chalk.yellow(`Skipped: ${result.skipped.join(', ')}`));
+      }
+      if (result.errors.length > 0) {
+        lines.push(chalk.red(`Errors: ${result.errors.map(e => e.file).join(', ')}`));
+      }
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown dotfiles subcommand: ${subcommand}. Use: sync`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /uninstall ────────────────────────────────────────────
+async function dispatchUninstall(context) {
+  try {
+    const { uninstall } = require('../../commands/uninstall');
+    await uninstall();
+    return { output: chalk.green('ADM CLI uninstalled. Remove the binary manually if needed.'), shouldExit: true, shouldClear: false };
+  } catch (err) {
+    return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+  }
+}
+
+// ─── /plugins ──────────────────────────────────────────────
+function dispatchPlugins(context) {
+  const { loadPlugins } = require('../../plugins/loader');
+  const plugins = loadPlugins();
+
+  if (plugins.size === 0) {
+    return { output: chalk.yellow('No plugins installed. Add .js files to ~/.adm/plugins/'), shouldExit: false, shouldClear: false };
+  }
+
+  const lines = [chalk.bold('Loaded plugins:\n')];
+  for (const [name, plugin] of plugins) {
+    lines.push(`  ${chalk.green(name.padEnd(16))} ${plugin.description || '(no description)'}`);
+  }
+  return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+}
+
+// ─── Plugin fallback ───────────────────────────────────────
+async function dispatchPlugin(cmdName, args, context) {
+  try {
+    const { loadPlugins } = require('../../plugins/loader');
+    const plugins = loadPlugins();
+    const plugin = plugins.get(cmdName);
+    if (!plugin) return null;
+
+    const output = await plugin.execute(args, context);
+    return { output: typeof output === 'string' ? output : JSON.stringify(output), shouldExit: false, shouldClear: false };
+  } catch {
+    return null;
+  }
 }

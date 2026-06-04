@@ -4,17 +4,24 @@ _adm() {
   local -a commands subcommands opts
 
   commands=(
-    'setup:Run interactive setup wizard'
-    'installers:Plan or run environment installers'
-    'connect:Manage service connections'
-    'pr:Manage pull requests'
-    'mr:Manage merge requests (GitLab)'
-    'issue-list:List issues from connected platforms'
-    'dotfiles:Manage dotfiles sync'
-    'clock:ASCII clock'
-    'theme:Choose a color theme'
-    'uninstall:Remove ADM config and references'
-    'assistant:Launch interactive assistant shell'
+    'help:Show command reference'
+    'exit:Exit ADM'
+    'clear:Clear message history'
+    'theme:List or switch themes'
+    'config:Show current configuration'
+    'status:Show git status'
+    'ai:Toggle AI mode or ask a question'
+    'model:Show or switch AI provider'
+    'setup:Launch extension setup wizard'
+    'connect:Connect to GitHub or GitLab'
+    'pr:Pull request operations'
+    'mr:Merge request operations (GitLab)'
+    'issue:List issues from connected platform'
+    'commit:Commit subcommands'
+    'clock:Show ASCII clock'
+    'dotfiles:Sync dotfiles from repo'
+    'uninstall:Remove ADM CLI config'
+    'plugins:List loaded plugins'
   )
 
   _arguments -C \
@@ -30,9 +37,6 @@ _adm() {
         setup)
           _arguments '--dry-run[Preview planned actions without executing]'
           ;;
-        installers)
-          _arguments '--dry-run[Plan only, do not execute]' '--execute[Execute installers (requires ADM_EXECUTE=1)]'
-          ;;
         connect)
           local -a connect_subs
           connect_subs=('github:Connect GitHub account' 'gitlab:Connect GitLab account' 'list:List connected services' 'disconnect:Disconnect a service')
@@ -40,7 +44,7 @@ _adm() {
             _describe 'subcommand' connect_subs
           else
             case $words[2] in
-              github|gitlab) _arguments '--token[Access token]' ;;
+              github|gitlab) _arguments '--token[Access token]:token:' ;;
             esac
           fi
           ;;
@@ -49,11 +53,6 @@ _adm() {
           pr_subs=('list:List open pull requests' 'draft:Create a draft PR' 'comment:Comment on a pull request')
           if (( CURRENT == 2 )); then
             _describe 'subcommand' pr_subs
-          else
-            case $words[2] in
-              list) _arguments '--repo[Filter by repo (owner/name)]' '--limit[Max results]:limit:' ;;
-              draft) _arguments '--base[Base branch]:branch:' ;;
-            esac
           fi
           ;;
         mr)
@@ -61,36 +60,26 @@ _adm() {
           mr_subs=('list:List open merge requests' 'draft:Create a draft MR' 'comment:Comment on a merge request')
           if (( CURRENT == 2 )); then
             _describe 'subcommand' mr_subs
-          else
-            case $words[2] in
-              list) _arguments '--limit[Max results]:limit:' ;;
-              draft|comment) _arguments '--project-id[GitLab project ID]:id:' '--source-branch[Source branch]:branch:' ;;
-            esac
           fi
           ;;
-        issue-list)
-          _arguments '--platform[Filter by platform]:platform:(github gitlab)' '--limit[Max results]:limit:'
+        issue)
+          _arguments '1:subcommand:(list)'
+          ;;
+        commit)
+          _arguments '1:subcommand:(suggest)'
           ;;
         dotfiles)
           local -a dotfiles_subs
           dotfiles_subs=('sync:Clone/pull dotfiles repo and symlink files')
           if (( CURRENT == 2 )); then
             _describe 'subcommand' dotfiles_subs
-          else
-            case $words[2] in
-              sync) _arguments '--repo[Dotfiles repo URL]:url:' '--copy[Copy files instead of symlinking]' '--only[Sync only specified files]:files:' ;;
-            esac
           fi
           ;;
-        clock)
-          local -a clock_subs
-          clock_subs=('theme:Pick clock accent color')
-          if (( CURRENT == 2 )); then
-            _describe 'subcommand' clock_subs
-          fi
+        theme)
+          _arguments '1:theme:(dark light cyberpunk nord forest monokai)'
           ;;
-        assistant)
-          _arguments '--api-key[GLM API key]:key:'
+        model)
+          _arguments '1:provider:(glm-free glm-pro openai anthropic ollama list)'
           ;;
       esac
       ;;

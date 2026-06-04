@@ -8,10 +8,17 @@ function hexToAnsi(hex) {
   const b = parseInt(hex.slice(5, 7), 16);
   return `\x1B[38;2;${r};${g};${b}m`;
 }
+
+function lightenHex(hex) {
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + 80);
+  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + 80);
+  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + 80);
+  return `\x1B[38;2;${r};${g};${b}m`;
+}
 const RST = '\x1B[0m';
 
 // ── Glyph layout (H H : M M : S S) ────────────────────────
-const GW = [7, 7, 3, 7, 7, 3, 7, 7];
+const GW = [7, 7, 7, 7, 7, 7, 7, 7];
 const GP = [];
 { let p = 0; for (const w of GW) { GP.push(p); p += w + 1; } }
 
@@ -21,10 +28,11 @@ const GP = [];
  * • Each second: only the single changed digit gets overwritten.
  * • No console.clear(), no full repaint, no SYNC codes.
  */
-function startClock(config = {}) {
+function startClock(config = {}, onExit) {
   const theme = resolveTheme(config);
   const c = theme.colors || {};
   const ac = hexToAnsi(config.clockAccent || c.accent || c.primary || '#61dafb');
+  const lc = lightenHex(config.clockAccent || c.accent || c.primary || '#61dafb');
   const mc = hexToAnsi(c.muted || '#6c757d');
 
   const W = process.stdout.columns || 80;
@@ -43,7 +51,15 @@ function startClock(config = {}) {
 
   for (let i = 0; i < topPad; i++) process.stdout.write('\n');
   for (const line of sample) {
-    process.stdout.write(pad + ac + line + RST + '\n');
+    // Render digits in accent color, colon in muted color
+    let buf = pad;
+    for (let g = 0; g < 8; g++) {
+      const seg = line.substring(GP[g], GP[g] + GW[g]);
+      const color = ac;
+      buf += color + seg + RST;
+      if (g < 7) buf += ' ';
+    }
+    process.stdout.write(buf + '\n');
   }
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -69,11 +85,12 @@ function startClock(config = {}) {
     const out = [];
     for (let g = 0; g < 8; g++) {
       if (newG[g] !== oldG[g]) {
+        const color = ac;
         for (let row = 0; row < 5; row++) {
           const y = clockRow + row;
           const x = padLen + GP[g] + 1;
           const seg = lines[row].substring(GP[g], GP[g] + GW[g]);
-          out.push('\x1B[' + y + ';' + x + 'H' + ac + seg + RST);
+          out.push('\x1B[' + y + ';' + x + 'H' + color + seg + RST);
         }
       }
     }
@@ -94,15 +111,20 @@ function startClock(config = {}) {
   }
 
   // Align to second boundary
-  setTimeout(() => { tick(); setInterval(tick, 1000); }, 1000 - Date.now() % 1000);
+  const initialDelay = 1000 - Date.now() % 1000;
+  setTimeout(() => { tick(); timer = setInterval(tick, 1000); }, initialDelay);
+
+  let timer = null;
 
   function cleanup() {
+    if (timer) { clearInterval(timer); timer = null; }
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
     process.stdout.write('\x1B[?25h\x1B[?1049l');
-    process.exit(0);
+    if (onExit) onExit();
+    else process.exit(0);
   }
   process.on('SIGINT', cleanup);
   process.on('SIGTERM', cleanup);

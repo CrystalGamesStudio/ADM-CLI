@@ -1,6 +1,10 @@
 const React = require('react');
 const { createAppState } = require('./app-state');
 const { createSetupScreen } = require('./components/SetupScreen');
+const { startClock } = require('../commands/clock');
+const { clockThemePicker } = require('../commands/clock-theme');
+const { resolveTheme } = require('../ui/theme');
+const { readConfig } = require('../config');
 
 function createApp(ink) {
   const { Box, Text, useInput, useApp } = ink;
@@ -12,7 +16,41 @@ function createApp(ink) {
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
     const [showSetup, setShowSetup] = React.useState(false);
+    const [showClock, setShowClock] = React.useState(false);
     const { exit } = useApp();
+
+    // Full-screen clock: when flag is set, run startClock outside ink
+    React.useEffect(() => {
+      if (stateRef.current.runClock) {
+        stateRef.current.runClock = false;
+        setShowClock(true);
+        readConfig().then(cfg => {
+          startClock(cfg || {}, () => {
+            process.stdout.write('\x1B[2J\x1B[H');
+            setShowClock(false);
+            stateRef.current.clearClockFlags();
+          });
+        });
+      }
+    }, [stateRef.current.runClock]);
+
+    React.useEffect(() => {
+      if (stateRef.current.runClockTheme) {
+        stateRef.current.runClockTheme = false;
+        setShowClock(true);
+        clockThemePicker().then(() => {
+          process.stdout.write('\x1B[2J\x1B[H');
+          if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+          }
+          setShowClock(false);
+          stateRef.current.clearClockFlags();
+          stateRef.current.messages.push({ text: 'Clock theme saved.', type: 'system' });
+          rerender();
+        });
+      }
+    }, [stateRef.current.runClockTheme]);
 
     const rerender = () => {
       setMessages([...stateRef.current.messages]);
@@ -78,6 +116,20 @@ function createApp(ink) {
     const aiMode = bar.aiMode;
     const suggestions = !aiMode && input.startsWith('/') ? stateRef.current.getSuggestions(input) : [];
 
+    // Resolve theme colors from current theme name
+    const themeName = stateRef.current.themeState.current;
+    let tc;
+    try {
+      tc = resolveTheme({ theme: themeName }).colors;
+    } catch {
+      tc = resolveTheme({}).colors;
+    }
+
+    // When clock is running full-screen, don't render anything
+    if (showClock) {
+      return null;
+    }
+
     // When setup is active, render SetupScreen instead of main view
     if (stateRef.current.showSetup) {
       return React.createElement(
@@ -86,12 +138,12 @@ function createApp(ink) {
         // StatusBar
         React.createElement(
           Box,
-          { borderStyle: 'single', borderColor: 'gray', paddingX: 1 },
-          React.createElement(Text, { color: 'cyan' }, bar.themeName),
-          React.createElement(Text, { color: 'gray' }, ' │ '),
-          React.createElement(Text, { color: 'yellow' }, 'Setup Wizard'),
-          React.createElement(Text, { color: 'gray' }, ' │ '),
-          React.createElement(Text, { color: 'yellow' }, `ADM ${bar.version}`),
+          { borderStyle: 'single', borderColor: tc.muted, paddingX: 1 },
+          React.createElement(Text, { color: tc.primary }, bar.themeName),
+          React.createElement(Text, { color: tc.muted }, ' │ '),
+          React.createElement(Text, { color: tc.accent }, 'Setup Wizard'),
+          React.createElement(Text, { color: tc.muted }, ' │ '),
+          React.createElement(Text, { color: tc.warning }, `ADM ${bar.version}`),
         ),
         React.createElement(SetupScreen, {
           onExit: () => {
@@ -111,33 +163,33 @@ function createApp(ink) {
       // StatusBar
       React.createElement(
         Box,
-        { borderStyle: 'single', borderColor: 'gray', paddingX: 1 },
-        React.createElement(Text, { color: 'cyan' }, bar.themeName),
-        React.createElement(Text, { color: 'gray' }, ' │ '),
-        React.createElement(Text, { color: aiMode ? 'green' : 'gray' }, `AI: ${aiMode ? 'ON' : 'off'}`),
-        React.createElement(Text, { color: 'gray' }, ' │ '),
-        React.createElement(Text, { color: 'yellow' }, `ADM ${bar.version}`),
+        { borderStyle: 'single', borderColor: tc.muted, paddingX: 1 },
+        React.createElement(Text, { color: tc.primary }, bar.themeName),
+        React.createElement(Text, { color: tc.muted }, ' │ '),
+        React.createElement(Text, { color: aiMode ? tc.success : tc.muted }, `AI: ${aiMode ? 'ON' : 'off'}`),
+        React.createElement(Text, { color: tc.muted }, ' │ '),
+        React.createElement(Text, { color: tc.warning }, `ADM ${bar.version}`),
       ),
       // Messages
       React.createElement(
         Box,
         { flexDirection: 'column', flexGrow: 1, paddingX: 1 },
         ...messages.map((msg, i) =>
-          React.createElement(Text, { key: i, wrap: 'wrap' }, msg.text)
+          React.createElement(Text, { key: i, wrap: 'wrap', color: tc.text }, msg.text)
         ),
       ),
       // Suggestions
       suggestions.length > 0 && React.createElement(
         Box,
         { paddingX: 1 },
-        React.createElement(Text, { dimColor: true, color: 'red' }, suggestions.map(s => `/${s}`).join('  ')),
+        React.createElement(Text, { dimColor: true, color: tc.accent }, suggestions.map(s => `/${s}`).join('  ')),
       ),
-      // Input bar — blue prompt when AI mode is ON
+      // Input bar — accent color when AI mode is ON
       React.createElement(
         Box,
-        { borderStyle: 'single', borderColor: aiMode ? 'blue' : 'gray', paddingX: 1 },
-        React.createElement(Text, { color: aiMode ? 'blue' : 'green' }, aiMode ? 'AI> ' : '> '),
-        React.createElement(Text, { color: aiMode ? 'blue' : undefined }, input),
+        { borderStyle: 'single', borderColor: aiMode ? tc.secondary : tc.muted, paddingX: 1 },
+        React.createElement(Text, { color: aiMode ? tc.secondary : tc.success }, aiMode ? 'AI> ' : '> '),
+        React.createElement(Text, { color: aiMode ? tc.secondary : tc.text }, input),
         React.createElement(Text, { dimColor: true }, '█'),
       ),
     );

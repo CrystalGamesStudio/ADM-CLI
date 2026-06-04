@@ -157,20 +157,8 @@ async function saveColor(config, color, done) {
   const newConfig = { ...config, clockAccent: color };
   await writeConfig(newConfig);
 
+  // Clear screen — TUI will take over
   process.stdout.write('\x1B[2J\x1B[H');
-  // Quick final preview
-  const lines = renderClock(new Date());
-  const w = process.stdout.columns || 80;
-  const cw = lines[0].length;
-  const pad = ' '.repeat(Math.max(0, Math.floor((w - cw) / 2)));
-  console.log('');
-  for (const line of lines) {
-    console.log(pad + chalk.hex(color)(line));
-  }
-  console.log('');
-  console.log(chalk.hex(color)('  ✓ Clock color saved: ') + chalk.hex(color).bold(color));
-  console.log(chalk.gray('  ~/.adm/config.json — run adm clock to see it.\n'));
-
   done();
 }
 

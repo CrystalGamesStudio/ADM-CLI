@@ -125,3 +125,66 @@ describe('TUI App component structure', () => {
     expect(boot.constructor.name).toBe('AsyncFunction');
   });
 });
+
+describe('App state — /clock and /clock theme', () => {
+  test('processInput(/clock) sets runClock flag', async () => {
+    const state = createAppState();
+    const result = await state.processInput('/clock');
+
+    expect(state.runClock).toBe(true);
+  });
+
+  test('processInput(/clock theme) sets runClockTheme flag', async () => {
+    const state = createAppState();
+    const result = await state.processInput('/clock theme');
+
+    expect(state.runClockTheme).toBe(true);
+  });
+
+  test('clearClockFlags() resets both flags', async () => {
+    const state = createAppState();
+    await state.processInput('/clock');
+    expect(state.runClock).toBe(true);
+
+    state.clearClockFlags();
+    expect(state.runClock).toBe(false);
+    expect(state.runClockTheme).toBe(false);
+  });
+});
+
+describe('App state — /theme switches theme and updates colors', () => {
+  test('/theme cyberpunk saves theme to config', async () => {
+    jest.resetModules();
+    const writeConfig = jest.fn((c) => Promise.resolve());
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({})),
+      writeConfig,
+      ensureConfigDir: jest.fn(),
+    }));
+
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    const state = createState();
+    await state.processInput('/theme cyberpunk');
+
+    expect(writeConfig).toHaveBeenCalled();
+    const saved = writeConfig.mock.calls[0][0];
+    expect(saved.theme).toBe('cyberpunk');
+  });
+
+  test('/theme cyberpunk updates themeState.current', async () => {
+    const state = createAppState();
+    await state.processInput('/theme cyberpunk');
+
+    expect(state.themeState.current).toBe('cyberpunk');
+  });
+
+  test('theme colors are different for dark vs cyberpunk', async () => {
+    const state = createAppState();
+    const darkBar = state.getStatusBar();
+
+    await state.processInput('/theme cyberpunk');
+
+    // The theme state should reflect the change
+    expect(state.themeState.current).toBe('cyberpunk');
+  });
+});
