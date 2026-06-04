@@ -12,7 +12,7 @@
     "url": "https://github.com/CrystalGamesStudio/ADM-CLI/issues"
   },
   "bin": {
-    "adm": "./bin/adm"
+    "adm": "bin/adm"
   },
   "files": [
     "bin/",
