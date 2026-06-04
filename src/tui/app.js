@@ -1,16 +1,34 @@
 const React = require('react');
 const { createAppState } = require('./app-state');
+const { createSetupScreen } = require('./components/SetupScreen');
 
 function createApp(ink) {
   const { Box, Text, useInput, useApp } = ink;
+  const SetupScreen = createSetupScreen(ink);
 
   return function App() {
     const stateRef = React.useRef(createAppState());
+    _lastAppState = stateRef.current;
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
+    const [showSetup, setShowSetup] = React.useState(false);
     const { exit } = useApp();
 
+    const rerender = () => {
+      setMessages([...stateRef.current.messages]);
+      setShowSetup(stateRef.current.showSetup);
+    };
+
     useInput(async (ch, key) => {
+      // When setup screen is active, delegate input handling
+      if (stateRef.current.showSetup) {
+        if (key.escape) {
+          stateRef.current.exitSetup();
+          rerender();
+        }
+        return;
+      }
+
       // Tab — autocomplete command
       if (key.tab) {
         if (!stateRef.current.aiMode && input.startsWith('/')) {
@@ -25,7 +43,7 @@ function createApp(ink) {
       // Esc — exit AI mode (does NOT quit app)
       if (key.escape) {
         stateRef.current.exitAI();
-        setMessages([...stateRef.current.messages]);
+        rerender();
         return;
       }
 
@@ -39,7 +57,7 @@ function createApp(ink) {
         if (trimmed === '') return;
         const result = await stateRef.current.processInput(trimmed);
         setInput('');
-        setMessages([...stateRef.current.messages]);
+        rerender();
         if (result.shouldExit) {
           exit();
         }
@@ -59,6 +77,33 @@ function createApp(ink) {
     const bar = stateRef.current.getStatusBar();
     const aiMode = bar.aiMode;
     const suggestions = !aiMode && input.startsWith('/') ? stateRef.current.getSuggestions(input) : [];
+
+    // When setup is active, render SetupScreen instead of main view
+    if (stateRef.current.showSetup) {
+      return React.createElement(
+        Box,
+        { flexDirection: 'column' },
+        // StatusBar
+        React.createElement(
+          Box,
+          { borderStyle: 'single', borderColor: 'gray', paddingX: 1 },
+          React.createElement(Text, { color: 'cyan' }, bar.themeName),
+          React.createElement(Text, { color: 'gray' }, ' │ '),
+          React.createElement(Text, { color: 'yellow' }, 'Setup Wizard'),
+          React.createElement(Text, { color: 'gray' }, ' │ '),
+          React.createElement(Text, { color: 'yellow' }, `ADM ${bar.version}`),
+        ),
+        React.createElement(SetupScreen, {
+          onExit: () => {
+            stateRef.current.exitSetup();
+            stateRef.current.markSetupDone();
+            rerender();
+          },
+          dryRun: stateRef.current.setupDryRun,
+          platform: process.platform,
+        }),
+      );
+    }
 
     return React.createElement(
       Box,
@@ -99,12 +144,19 @@ function createApp(ink) {
   };
 }
 
+let _lastAppState = null;
+
 async function boot() {
   const ink = await import('ink');
   const App = createApp(ink);
   const { render } = ink;
   const { waitUntilExit } = render(React.createElement(App));
   await waitUntilExit();
+
+  // After TUI exits, show PATH refresh hint if setup installed tools
+  if (_lastAppState && _lastAppState.setupInstalled) {
+    console.log('\n  Tools installed! Run: source ~/.zshrc\n');
+  }
 }
 
 module.exports = { createApp, boot };

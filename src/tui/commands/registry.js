@@ -12,6 +12,7 @@ const BUILTIN_COMMANDS = [
   { name: 'status', description: 'Show git status' },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
   { name: 'model', description: 'Show or switch AI provider' },
+  { name: 'setup', description: 'Launch extension setup wizard' },
 ];
 
 function createRegistry(context = {}) {
@@ -67,6 +68,9 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'model') {
       return await dispatchModel(args, context);
+    }
+    if (cmdName === 'setup') {
+      return dispatchSetup(args);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -255,4 +259,15 @@ function findClosestMatch(input, commands, maxDist = 2) {
     if (d < bestDist) { bestDist = d; best = name; }
   }
   return bestDist <= maxDist ? best : null;
+}
+
+function dispatchSetup(args) {
+  const isDryRun = args === '--dry-run';
+  return {
+    output: isDryRun ? chalk.cyan('Setup dry-run mode — showing planned actions') : null,
+    shouldShowSetup: true,
+    shouldExit: false,
+    shouldClear: false,
+    dryRun: isDryRun,
+  };
 }

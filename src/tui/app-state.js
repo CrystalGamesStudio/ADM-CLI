@@ -4,7 +4,7 @@ const ai = require('../integrations/ai-backend');
 const { getKnowledge } = require('../ai/knowledge');
 
 const VERSION = 'v0.2.0';
-const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands.';
+const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /setup to install developer tools.';
 
 function createAppState() {
   const config = {};
@@ -18,6 +18,8 @@ function createAppState() {
     themeState,
     config,
     aiMode: false,
+    showSetup: false,
+    setupDryRun: false,
   };
 
   let knowledge = null;
@@ -73,6 +75,12 @@ function createAppState() {
       return result;
     }
 
+    if (result.shouldShowSetup) {
+      state.showSetup = true;
+      state.setupDryRun = result.dryRun || false;
+      return result;
+    }
+
     if (result.output) {
       state.messages.push({ text: result.output, type: 'command' });
     }
@@ -84,6 +92,15 @@ function createAppState() {
     if (state.aiMode) {
       disableAI();
     }
+  }
+
+  function exitSetup() {
+    state.showSetup = false;
+    state.setupDryRun = false;
+  }
+
+  function markSetupDone() {
+    state.setupInstalled = true;
   }
 
   function getStatusBar() {
@@ -100,7 +117,21 @@ function createAppState() {
     return registry.autocomplete(stripped);
   }
 
-  return { messages: state.messages, theme, themeState, aiMode: state.aiMode, processInput, getStatusBar, exitAI, getSuggestions };
+  return {
+    get messages() { return state.messages; },
+    theme,
+    themeState,
+    get aiMode() { return state.aiMode; },
+    get showSetup() { return state.showSetup; },
+    get setupDryRun() { return state.setupDryRun; },
+    processInput,
+    getStatusBar,
+    exitAI,
+    exitSetup,
+    markSetupDone,
+    get setupInstalled() { return state.setupInstalled; },
+    getSuggestions,
+  };
 }
 
 module.exports = { createAppState, VERSION, WELCOME_TEXT };
