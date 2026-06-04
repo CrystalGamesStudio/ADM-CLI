@@ -1,6 +1,7 @@
 const chalk = require('chalk');
 const { listThemes, getTheme } = require('../../ui/theme');
-const { readConfig } = require('../../config');
+const { readConfig, writeConfig } = require('../../config');
+const { listProviders, getProvider } = require('../../integrations/ai-providers/registry');
 
 const BUILTIN_COMMANDS = [
   { name: 'help', description: 'Show command reference' },
@@ -10,6 +11,7 @@ const BUILTIN_COMMANDS = [
   { name: 'config', description: 'Show current configuration' },
   { name: 'status', description: 'Show git status' },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
+  { name: 'model', description: 'Show or switch AI provider' },
 ];
 
 function createRegistry(context = {}) {
@@ -61,6 +63,9 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'ai') {
       return dispatchAi(args, context);
+    }
+    if (cmdName === 'model') {
+      return await dispatchModel(args, context);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -167,6 +172,64 @@ async function dispatchAi(args, context) {
   } catch (err) {
     return { output: chalk.red(`AI error: ${err.message}`), shouldExit: false, shouldClear: false };
   }
+}
+
+async function dispatchModel(args, context) {
+  const config = await readConfig();
+  const currentProvider = config.aiProvider || 'glm-free';
+
+  if (!args || args === 'list') {
+    if (!args) {
+      const current = getProvider(currentProvider);
+      if (current) {
+        const lines = [chalk.bold(`Current provider: ${chalk.cyan(current.name)} (${currentProvider})`), ''];
+        const providers = listProviders();
+        for (const p of providers) {
+          const marker = p.id === currentProvider ? chalk.green(' ← active') : '';
+          lines.push(`  ${chalk.cyan(p.id.padEnd(12))} ${p.name}${marker}`);
+        }
+        lines.push(`\nType ${chalk.bold('/model <id>')} to switch. ${chalk.bold('/model list')} for details.`);
+        return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+      }
+    }
+
+    const providers = listProviders();
+    const lines = [chalk.bold('Available AI providers:\n')];
+    for (const p of providers) {
+      const marker = p.id === currentProvider ? chalk.green(' ← active') : '';
+      const auth = p.requiresAuth ? chalk.yellow('(requires API key)') : chalk.gray('(free/local)');
+      lines.push(`  ${chalk.cyan(p.id.padEnd(12))} ${p.name.padEnd(18)} ${auth}${marker}`);
+    }
+    lines.push(`\nType ${chalk.bold('/model <id>')} to switch provider.`);
+    return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+  }
+
+  const provider = getProvider(args);
+  if (!provider) {
+    return {
+      output: chalk.red(`Unknown provider: ${args}. Type /model list to see available providers.`),
+      shouldExit: false,
+      shouldClear: false,
+    };
+  }
+
+  config.aiProvider = args;
+  await writeConfig(config);
+
+  const providerSpecific = [];
+  if (args === 'openai') {
+    providerSpecific.push(chalk.yellow('Set your API key: /config set ai.openaiKey <key>'));
+  } else if (args === 'anthropic') {
+    providerSpecific.push(chalk.yellow('Set your API key: /config set ai.anthropicKey <key>'));
+  } else if (args === 'ollama') {
+    providerSpecific.push(chalk.gray('Using default URL: http://localhost:11434'));
+    providerSpecific.push(chalk.gray('Change with: /config set ai.ollamaUrl <url>'));
+  }
+
+  const lines = [chalk.green(`Provider switched to ${chalk.bold(provider.name)} (${args}).`)];
+  if (providerSpecific.length) lines.push(...providerSpecific);
+
+  return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
 }
 
 function levenshtein(a, b) {
