@@ -1,14 +1,8 @@
 #!/usr/bin/env node
-// Post-install launcher — runs adm setup after installation
-const { execSync } = require('child_process');
-const path = require('path');
-
-const bin = path.join(__dirname, '..', 'bin', 'adm');
-const args = process.argv.slice(2).join(' ');
-
-try {
-  execSync(`node "${bin}" setup ${args}`, { stdio: 'inherit' });
-} catch (err) {
-  console.error('Post-install setup failed. Run `adm setup` manually.');
-  process.exit(1);
-}
+const chalk = require('chalk');
+console.log('');
+console.log(chalk.green('  ADM CLI installed successfully!'));
+console.log('');
+console.log('  Run ' + chalk.bold('adm') + ' to launch the TUI.');
+console.log('  Run ' + chalk.bold('adm setup') + ' to configure your dev environment.');
+console.log('');

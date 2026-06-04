@@ -1,0 +1,13 @@
+tests/
+plans/
+.claude/
+.DS_Store
+.git/
+.gitignore
+jest.config.js
+yarn.lock
+scripts/installer.sh
+scripts/homebrew/
+scripts/run-installers.js
+scripts/install.ps1
+*.tgz

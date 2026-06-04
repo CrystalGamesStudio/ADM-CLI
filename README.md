@@ -1,21 +1,50 @@
-# ADM CLI v2
+# ADM CLI
 
-## Executive Summary
+**ADM** is a developer-focused CLI tool that automates environment setup on new machines and provides an AI-powered daily assistant for development workflows. It targets Node.js/web developers on macOS, Linux, and Windows, reducing initial dev setup from hours to minutes while staying available as an intelligent companion throughout development.
 
-**ADM** is a developer-focused CLI tool that automates environment setup on new machines and provides an AI-powered daily assistant for development workflows. It targets Node.js/web developers on macOS and Linux, reducing initial dev setup from hours to minutes while staying available as an intelligent companion throughout development.
+ADM v2 features a full-screen TUI (ink + React). One command — `adm` — opens an OpenCode-like interface where everything happens: AI chat, setup, GitHub/GitLab management, tool installation, and configuration.
 
-ADM v2 replaces the commander.js CLI + readline REPL with a single full-screen TUI (ink + React). One command — `adm` — opens an OpenCode-like interface where everything happens: AI chat, setup, GitHub/GitLab management, tool installation, and configuration.
+---
+
+## Installation
+
+### npm (recommended)
+
+```bash
+npm install -g @crystalgames/adm
+```
+
+### macOS / Linux (curl)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/installer.sh | sh
+```
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew tap crystalgames/tap
+brew install crystalgames/tap/adm
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/install.ps1 | iex
+```
+
+**Prerequisites:** Node.js 18+ must be installed. The curl and PowerShell installers will check for this and provide installation instructions if missing.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install
-npm install -g adm-cli
-
 # Launch full-screen TUI
 adm
+
+# Run interactive setup wizard
+adm setup
 
 # Inside the TUI:
 /help          — Show all commands
@@ -51,6 +80,23 @@ When AI mode is ON (`/ai`):
 - Press `Esc` or type `exit` to leave AI mode
 
 AI knowledge system: on first run, ADM reads its own docs (README, PRD) and caches a compact summary in `~/.adm/ai-knowledge.json`. This knowledge is injected as a system message in every AI query, so the AI knows about ADM itself. Cache auto-updates when ADM version changes.
+
+---
+
+## CLI Commands
+
+```
+adm setup          Run interactive setup wizard
+adm installers     Plan or run environment installers
+adm connect        Manage service connections (github, gitlab)
+adm pr             Manage pull requests (list, draft, comment)
+adm mr             Manage merge requests on GitLab
+adm issue-list     List issues from GitHub / GitLab
+adm dotfiles       Manage dotfiles sync
+adm clock          ASCII clock
+adm theme          Choose a color theme
+adm uninstall      Remove ADM config and references
+```
 
 ---
 
@@ -161,10 +207,13 @@ npm start
 
 # Run specific test suite
 npx jest tests/unit/tui/ --no-coverage
+
+# Link globally for development
+npm link
 ```
 
 ### Test Structure
-- `tests/unit/` — Unit tests (234 tests, 45 suites)
+- `tests/unit/` — Unit tests
 - `tests/integration/` — Integration tests
 - `tests/e2e/` — End-to-end smoke tests
 
@@ -172,4 +221,4 @@ npx jest tests/unit/tui/ --no-coverage
 
 ## License
 
-Private — internal use only.
+MIT — see [LICENSE](./LICENSE).

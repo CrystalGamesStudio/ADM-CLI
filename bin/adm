@@ -20,7 +20,7 @@ const program = new Command();
 program
   .name('adm')
   .description('ADM developer CLI — setup, GitHub integration, and daily assistant')
-  .version('0.1.0');
+  .version(require('../package.json').version);
 
 function exitWithError(err) {
   const admErr = handleAdmError(err);

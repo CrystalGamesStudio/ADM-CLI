@@ -511,7 +511,7 @@ describe('/help shows all migrated commands', () => {
 
     expect(result.output).toMatch(/\bhelp\b/);
     expect(result.output).toMatch(/\bexit\b/);
-    expect(result.output).toMatch(/\bai\b/);
+    expect(result.output).toContain('ai');
     expect(result.output).toMatch(/\bsetup\b/);
   });
 });

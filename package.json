@@ -1,17 +1,48 @@
 {
-  "name": "adm-cli",
+  "name": "@crystalgames/adm",
   "version": "0.1.0",
-  "private": true,
+  "description": "ADM developer CLI — environment setup, GitHub integration, and AI-powered daily assistant",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrystalGamesStudio/ADM-CLI.git"
+  },
+  "homepage": "https://github.com/CrystalGamesStudio/ADM-CLI#readme",
+  "bugs": {
+    "url": "https://github.com/CrystalGamesStudio/ADM-CLI/issues"
+  },
   "bin": {
     "adm": "./bin/adm"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/completion/",
+    "scripts/install.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "start": "node ./bin/adm",
     "test": "jest --config=jest.config.js",
     "test:unit": "jest tests/unit --runInBand",
     "test:integration": "jest tests/integration --runInBand",
-    "test:shell": "echo 'Install bats separately to run shell tests' && exit 0"
+    "test:shell": "echo 'Install bats separately to run shell tests' && exit 0",
+    "prepublishOnly": "npm test"
   },
+  "keywords": [
+    "cli",
+    "developer-tools",
+    "setup",
+    "github",
+    "gitlab",
+    "ai",
+    "adm"
+  ],
   "dependencies": {
     "@octokit/rest": "^20.0.2",
     "chalk": "^4.1.2",
