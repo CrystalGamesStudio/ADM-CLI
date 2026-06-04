@@ -11,6 +11,13 @@ function createApp(ink) {
     const { exit } = useApp();
 
     useInput(async (ch, key) => {
+      // Esc — exit AI mode (does NOT quit app)
+      if (key.escape) {
+        stateRef.current.exitAI();
+        setMessages([...stateRef.current.messages]);
+        return;
+      }
+
       if (key.ctrl && ch === 'c') {
         exit();
         return;
@@ -39,6 +46,7 @@ function createApp(ink) {
     });
 
     const bar = stateRef.current.getStatusBar();
+    const aiMode = bar.aiMode;
 
     return React.createElement(
       Box,
@@ -49,7 +57,7 @@ function createApp(ink) {
         { borderStyle: 'single', borderColor: 'gray', paddingX: 1 },
         React.createElement(Text, { color: 'cyan' }, bar.themeName),
         React.createElement(Text, { color: 'gray' }, ' │ '),
-        React.createElement(Text, { color: bar.aiMode ? 'green' : 'gray' }, `AI: ${bar.aiMode ? 'ON' : 'off'}`),
+        React.createElement(Text, { color: aiMode ? 'green' : 'gray' }, `AI: ${aiMode ? 'ON' : 'off'}`),
         React.createElement(Text, { color: 'gray' }, ' │ '),
         React.createElement(Text, { color: 'yellow' }, `ADM ${bar.version}`),
       ),
@@ -61,12 +69,12 @@ function createApp(ink) {
           React.createElement(Text, { key: i, wrap: 'wrap' }, msg.text)
         ),
       ),
-      // Input bar
+      // Input bar — blue prompt when AI mode is ON
       React.createElement(
         Box,
-        { borderStyle: 'single', borderColor: 'blue', paddingX: 1 },
-        React.createElement(Text, { color: 'green' }, '> '),
-        React.createElement(Text, null, input),
+        { borderStyle: 'single', borderColor: aiMode ? 'blue' : 'gray', paddingX: 1 },
+        React.createElement(Text, { color: aiMode ? 'blue' : 'green' }, aiMode ? 'AI> ' : '> '),
+        React.createElement(Text, { color: aiMode ? 'blue' : undefined }, input),
         React.createElement(Text, { dimColor: true }, '█'),
       ),
     );

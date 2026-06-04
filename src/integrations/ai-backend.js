@@ -19,7 +19,7 @@ async function query(prompt, options = {}) {
     const body = {
       model,
       max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
-      messages: [{ role: 'user', content: prompt }],
+      messages: options.messages || [{ role: 'user', content: prompt }],
     };
 
     try {

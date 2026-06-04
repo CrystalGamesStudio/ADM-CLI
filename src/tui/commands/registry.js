@@ -9,6 +9,7 @@ const BUILTIN_COMMANDS = [
   { name: 'theme', description: 'List or switch themes' },
   { name: 'config', description: 'Show current configuration' },
   { name: 'status', description: 'Show git status' },
+  { name: 'ai', description: 'Toggle AI mode or ask a question' },
 ];
 
 function createRegistry(context = {}) {
@@ -57,6 +58,9 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'status') {
       return dispatchStatus(context);
+    }
+    if (cmdName === 'ai') {
+      return dispatchAi(args, context);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -146,6 +150,24 @@ function dispatchStatus(context) {
 }
 
 module.exports = { createRegistry };
+
+async function dispatchAi(args, context) {
+  if (!args) {
+    return { shouldToggleAI: true, shouldExit: false, shouldClear: false };
+  }
+
+  const ai = context.ai;
+  if (!ai) {
+    return { output: chalk.yellow('AI not configured. Set GLM_API_KEY or run `adm setup`.'), shouldExit: false, shouldClear: false };
+  }
+
+  try {
+    const response = await ai.query(args);
+    return { output: `GLM: ${response}`, shouldExit: false, shouldClear: false };
+  } catch (err) {
+    return { output: chalk.red(`AI error: ${err.message}`), shouldExit: false, shouldClear: false };
+  }
+}
 
 function levenshtein(a, b) {
   const m = a.length, n = b.length;
