@@ -35,9 +35,11 @@ function createAppState() {
   async function processInput(input) {
     const trimmed = input.trim();
 
-    // In AI mode, intercept 'exit' and 'ai' to leave/toggle AI mode
-    if (state.aiMode && (trimmed === 'exit' || trimmed === 'ai')) {
-      disableAI();
+    // In AI mode, intercept /exit and /ai to leave/toggle AI mode
+    const cmd = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    if (state.aiMode && (cmd === 'exit' || cmd === 'ai')) {
+      state.aiMode = false;
+      state.messages.push({ text: 'Exited AI mode.', type: 'system' });
       return { output: null, shouldExit: false, shouldClear: false };
     }
 
@@ -92,7 +94,13 @@ function createAppState() {
     };
   }
 
-  return { messages: state.messages, theme, themeState, aiMode: state.aiMode, processInput, getStatusBar, exitAI };
+  function getSuggestions(input) {
+    const trimmed = input.trim();
+    const stripped = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    return registry.autocomplete(stripped);
+  }
+
+  return { messages: state.messages, theme, themeState, aiMode: state.aiMode, processInput, getStatusBar, exitAI, getSuggestions };
 }
 
 module.exports = { createAppState, VERSION, WELCOME_TEXT };

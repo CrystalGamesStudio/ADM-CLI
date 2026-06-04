@@ -11,6 +11,17 @@ function createApp(ink) {
     const { exit } = useApp();
 
     useInput(async (ch, key) => {
+      // Tab — autocomplete command
+      if (key.tab) {
+        if (!stateRef.current.aiMode && input.startsWith('/')) {
+          const suggestions = stateRef.current.getSuggestions(input);
+          if (suggestions.length === 1) {
+            setInput('/' + suggestions[0] + ' ');
+          }
+        }
+        return;
+      }
+
       // Esc — exit AI mode (does NOT quit app)
       if (key.escape) {
         stateRef.current.exitAI();
@@ -47,6 +58,7 @@ function createApp(ink) {
 
     const bar = stateRef.current.getStatusBar();
     const aiMode = bar.aiMode;
+    const suggestions = !aiMode && input.startsWith('/') ? stateRef.current.getSuggestions(input) : [];
 
     return React.createElement(
       Box,
@@ -68,6 +80,12 @@ function createApp(ink) {
         ...messages.map((msg, i) =>
           React.createElement(Text, { key: i, wrap: 'wrap' }, msg.text)
         ),
+      ),
+      // Suggestions
+      suggestions.length > 0 && React.createElement(
+        Box,
+        { paddingX: 1 },
+        React.createElement(Text, { dimColor: true, color: 'red' }, suggestions.map(s => `/${s}`).join('  ')),
       ),
       // Input bar — blue prompt when AI mode is ON
       React.createElement(

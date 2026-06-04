@@ -294,15 +294,15 @@ program
     }
   });
 
-// Handle --assistant flag by rewriting it to the default command
-if (process.argv.includes('--assistant')) {
-  process.argv = process.argv.filter(a => a !== '--assistant');
-}
-
-// Default to assistant when no subcommand given (but not for unknown commands)
+// Default to TUI when no subcommand given (but not for unknown commands)
 const firstArg = process.argv[2];
 if (!firstArg) {
-  process.argv.splice(2, 0, 'assistant');
+  const { boot } = require('../src/tui/app');
+  boot().catch(err => {
+    console.error(chalk.red(err.message));
+    process.exit(1);
+  });
+  return;
 }
 
 // ── Plugin fallback: nieznana komenda → sprawdź wtyczki ──

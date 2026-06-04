@@ -26,7 +26,8 @@ function createRegistry(context = {}) {
       return { output: '', shouldExit: false, shouldClear: false };
     }
 
-    const parts = trimmed.split(/\s+/);
+    const stripped = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    const parts = stripped.split(/\s+/);
     const cmdName = parts[0];
     const args = parts.slice(1).join(' ');
 
