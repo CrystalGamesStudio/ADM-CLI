@@ -6,7 +6,7 @@ async function execute(args, context = {}) {
   const subcommand = parts[0];
 
   if (!subcommand) {
-    return { output: chalk.yellow('Usage: commit <suggest>'), shouldExit: false };
+    return { output: chalk.yellow('Usage: /commit <suggest>'), shouldExit: false };
   }
 
   if (subcommand === 'suggest') {

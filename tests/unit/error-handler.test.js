@@ -4,7 +4,7 @@
  * Assumptions:
  * - Exit codes: 0=success, 1=system error, 2=user error
  * - Every AdmError has: type, message, exitCode, remediation
- * - remediation is a human-readable hint (e.g. "Run: adm connect github")
+ * - remediation is a human-readable hint (e.g. "Run /connect to reconnect.")
  * - Error types: auth, network, not_found, rate_limit, user_error, unknown
  * - Sensitive data (tokens, passwords) must NOT appear in messages
  */
@@ -12,14 +12,14 @@ const { AdmError, handleAdmError, formatError } = require('../../src/utils/error
 
 describe('AdmError', () => {
   test('creates error with type, message, exitCode, and remediation', () => {
-    const err = new AdmError('auth', 'Token expired', 1, 'Run: adm connect github');
+    const err = new AdmError('auth', 'Token expired', 1, 'Run /connect to reconnect.');
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeInstanceOf(AdmError);
     expect(err.name).toBe('AdmError');
     expect(err.type).toBe('auth');
     expect(err.message).toBe('Token expired');
     expect(err.exitCode).toBe(1);
-    expect(err.remediation).toBe('Run: adm connect github');
+    expect(err.remediation).toBe('Run /connect to reconnect.');
   });
 });
 
@@ -30,7 +30,7 @@ describe('handleAdmError', () => {
     expect(result.type).toBe('auth');
     expect(result.exitCode).toBe(1);
     expect(result.message).toContain('Authentication failed');
-    expect(result.remediation).toContain('adm connect');
+    expect(result.remediation).toContain('/connect');
   });
 
   test('maps 403 rate-limit error to exit 1 with wait hint', () => {
@@ -68,7 +68,7 @@ describe('handleAdmError', () => {
     const result = handleAdmError(new Error('Missing required argument: repo'));
     expect(result.type).toBe('user_error');
     expect(result.exitCode).toBe(2);
-    expect(result.remediation).toContain('adm --help');
+    expect(result.remediation).toContain('/help');
   });
 
   test('maps unknown error to exit 1', () => {
@@ -94,15 +94,15 @@ describe('handleAdmError', () => {
 
 describe('formatError', () => {
   test('returns formatted string with error message', () => {
-    const err = new AdmError('auth', 'Token expired', 1, 'Run: adm connect github');
+    const err = new AdmError('auth', 'Token expired', 1, 'Run /connect to reconnect.');
     const formatted = formatError(err);
     expect(formatted).toContain('Token expired');
   });
 
   test('includes remediation hint when present', () => {
-    const err = new AdmError('auth', 'Token expired', 1, 'Run: adm connect github');
+    const err = new AdmError('auth', 'Token expired', 1, 'Run /connect to reconnect.');
     const formatted = formatError(err);
-    expect(formatted).toContain('Run: adm connect github');
+    expect(formatted).toContain('Run /connect to reconnect.');
   });
 
   test('works without remediation', () => {

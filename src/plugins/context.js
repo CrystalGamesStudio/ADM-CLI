@@ -3,7 +3,7 @@ const { readConfig } = require('../config');
 const github = require('../integrations/github');
 
 /**
- * Bezpieczne ładowanie modułu integracji — zwraca null gdy moduł niedostępny
+ * Safe module loading — returns null when module is unavailable
  */
 function safeRequire(modulePath) {
   try {
@@ -14,8 +14,8 @@ function safeRequire(modulePath) {
 }
 
 /**
- * Tworzy wrapper API dla danej integracji (github/gitlab)
- * Zwraca null gdy platforma nie jest podłączona
+ * Creates an API wrapper for a given integration (github/gitlab)
+ * Returns null when platform is not connected
  */
 async function buildPlatformApi(integration, methods) {
   if (!integration) return null;
@@ -35,7 +35,7 @@ async function buildPlatformApi(integration, methods) {
 }
 
 /**
- * Tworzy obiekt kontekstu przekazywany do wtyczek
+ * Creates a context object passed to plugins
  * { config, logger, github, gitlab }
  */
 async function createPluginContext() {

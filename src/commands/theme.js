@@ -4,7 +4,7 @@ const { resolveTheme, listThemes } = require('../ui/theme');
 const { readConfig, writeConfig } = require('../config');
 
 /**
- * adm theme — interactive theme selector with live preview.
+ * /theme — interactive theme selector with live preview.
  * Arrow keys to browse, Enter to apply, theme saved to ~/.adm/config.json.
  */
 async function themeCommand() {
@@ -79,7 +79,7 @@ async function themeCommand() {
   );
   console.log(
     chalk.hex(nc.muted)('  ~/.adm/config.json updated') +
-    chalk.hex(nc.text)(' — restart adm to see changes everywhere.')
+    chalk.hex(nc.text)(' — restart to see changes everywhere.')
   );
   console.log('');
 

@@ -28,7 +28,7 @@ async function disconnect() {
 
 async function getClient() {
   const token = await retrieveToken('github');
-  if (!token) throw new Error('GitHub not connected. Run `adm connect github` first.');
+  if (!token) throw new Error('GitHub not connected. Run /connect first.');
   return createClient(token);
 }
 

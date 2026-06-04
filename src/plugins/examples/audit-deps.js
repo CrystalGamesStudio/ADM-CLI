@@ -2,16 +2,16 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * audit-deps — przykładowa wtyczka ADM
+ * audit-deps — example ADM plugin
  *
- * Analizuje package.json w bieżącym katalogu i raportuje:
- * - Liczbę zależności produkcyjnych i deweloperskich
- * - Czy są outdated (wymaga npm outdated)
- * - Podstawowe statystyki
+ * Analyzes package.json in current directory and reports:
+ * - Number of production and dev dependencies
+ * - Whether they are outdated (requires npm outdated)
+ * - Basic statistics
  */
 module.exports = {
   name: 'audit-deps',
-  description: 'Audytuje zależności projektu (package.json)',
+  description: 'Audit project dependencies (package.json)',
 
   async execute(args, context) {
     const { logger } = context;
@@ -19,8 +19,8 @@ module.exports = {
     const pkgPath = path.join(cwd, 'package.json');
 
     if (!fs.existsSync(pkgPath)) {
-      logger.warn('Nie znaleziono package.json w bieżącym katalogu.');
-      return 'Brak package.json — uruchom w katalogu projektu Node.js.';
+      logger.warn('No package.json found in current directory.');
+      return 'No package.json — run in a Node.js project directory.';
     }
 
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -28,14 +28,14 @@ module.exports = {
     const devDeps = Object.keys(pkg.devDependencies || {});
 
     const lines = [];
-    lines.push(`📦 Audyt zależności: ${pkg.name || 'nieznany projekt'}`);
-    lines.push(`   Zależności:       ${deps.length}`);
+    lines.push(`📦 Dependency audit: ${pkg.name || 'unknown project'}`);
+    lines.push(`   Dependencies:      ${deps.length}`);
     lines.push(`   Dev dependencies:  ${devDeps.length}`);
-    lines.push(`   Łącznie:          ${deps.length + devDeps.length}`);
+    lines.push(`   Total:             ${deps.length + devDeps.length}`);
 
     if (deps.length > 0) {
       lines.push('');
-      lines.push('   Zależności:');
+      lines.push('   Dependencies:');
       deps.forEach(d => lines.push(`     • ${d}`));
     }
 
@@ -45,15 +45,15 @@ module.exports = {
       devDeps.forEach(d => lines.push(`     • ${d}`));
     }
 
-    // Sprawdź czy jest lockfile
+    // Check for lockfile
     const hasLock = fs.existsSync(path.join(cwd, 'package-lock.json'))
       || fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'));
     if (!hasLock && (deps.length + devDeps.length) > 0) {
       lines.push('');
-      lines.push('   ⚠ Brak lockfile — rozważ npm install lub pnpm install');
+      lines.push('   ⚠ No lockfile — consider running npm install or pnpm install');
     }
 
-    logger.success(`Audyt zakończony dla ${pkg.name || 'projektu'}`);
+    logger.success(`Audit complete for ${pkg.name || 'project'}`);
     return lines.join('\n');
   },
 };

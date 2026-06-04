@@ -1,19 +1,19 @@
 const { storeToken, retrieveToken, removeToken } = require('../utils/keychain');
 
 /**
- * GitLab API wrapper — mirroruje wzór z github.js
- * Używa @gitbeaker/node jako klient API
+ * GitLab API wrapper — mirrors the pattern from github.js
+ * Uses @gitbeaker/node as API client
  */
 
 let Gitlab;
 try {
   Gitlab = require('@gitbeaker/node').Gitlab;
 } catch {
-  // @gitbeaker/node niedostępny — metody API rzucą błąd
+  // @gitbeaker/node unavailable — API methods will throw
 }
 
 function createClient(token) {
-  if (!Gitlab) throw new Error('Pakiet @gitbeaker/node nie jest zainstalowany. Uruchom: npm install @gitbeaker/node');
+  if (!Gitlab) throw new Error('Package @gitbeaker/node is not installed. Run: npm install @gitbeaker/node');
   return new Gitlab({ token });
 }
 
@@ -24,7 +24,7 @@ async function validateToken(token) {
     return { valid: true, user };
   } catch (err) {
     const message = err.response?.data?.message || err.message;
-    throw new Error(`Błąd walidacji tokenu GitLab: ${message}`);
+    throw new Error(`GitLab token validation failed: ${message}`);
   }
 }
 
@@ -40,7 +40,7 @@ async function disconnect() {
 
 async function getClient() {
   const token = await retrieveToken('gitlab');
-  if (!token) throw new Error('GitLab not connected. Uruchom `adm connect gitlab` first.');
+  if (!token) throw new Error('GitLab not connected. Run /connect gitlab first.');
   return createClient(token);
 }
 
@@ -61,7 +61,7 @@ async function listMRs(options = {}) {
       updatedAt: mr.updated_at,
     }));
   } catch (err) {
-    throw new Error(`Błąd pobierania MR: ${err.message}`);
+    throw new Error(`Failed to fetch MRs: ${err.message}`);
   }
 }
 
@@ -77,7 +77,7 @@ async function createDraftMR(title, options = {}) {
     );
     return { iid: mr.iid, url: mr.web_url, draft: true };
   } catch (err) {
-    throw new Error(`Błąd tworzenia MR: ${err.message}`);
+    throw new Error(`Failed to create MR: ${err.message}`);
   }
 }
 
@@ -91,7 +91,7 @@ async function commentOnMR(mrIid, message, options = {}) {
     );
     return { id: note.id, body: note.body };
   } catch (err) {
-    throw new Error(`Błąd komentowania MR: ${err.message}`);
+    throw new Error(`Failed to comment on MR: ${err.message}`);
   }
 }
 
@@ -112,7 +112,7 @@ async function listIssues(options = {}) {
       updatedAt: issue.updated_at,
     }));
   } catch (err) {
-    throw new Error(`Błąd pobierania issues: ${err.message}`);
+    throw new Error(`Failed to fetch issues: ${err.message}`);
   }
 }
 

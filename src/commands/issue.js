@@ -5,48 +5,48 @@ const gitlab = require('../integrations/gitlab');
 const { listStoredServices } = require('../utils/keychain');
 
 /**
- * Listuje issues z podłączonych platform (GitHub + GitLab)
- * Gdy wiele platform — interaktywny wybór
- * Gdy --platform podane — pomija wybór
+ * Lists issues from connected platforms (GitHub + GitLab)
+ * When multiple platforms — interactive selection
+ * When --platform given — skips selection
  */
 async function listIssues(options = {}) {
   const services = await listStoredServices();
 
   if (services.length === 0) {
-    throw new Error('Brak podłączonych platform. Uruchom `adm connect github` lub `adm connect gitlab`.');
+    throw new Error('No connected platforms. Run /connect to connect GitHub or GitLab.');
   }
 
-  // Filtruj do platform wspierających issues
+  // Filter to platforms supporting issues
   const platforms = services.filter(s => ['github', 'gitlab'].includes(s));
   if (platforms.length === 0) {
-    throw new Error('Brak podłączonych platform. Uruchom `adm connect github` lub `adm connect gitlab`.');
+    throw new Error('No connected platforms. Run /connect to connect GitHub or GitLab.');
   }
 
   let platform = options.platform;
 
-  // Gdy --platform podane, użyj go
+  // When --platform given, use it
   if (!platform) {
     if (platforms.length === 1) {
       platform = platforms[0];
     } else {
-      // Interaktywny wybór
+      // Interactive selection
       const answer = await inquirer.prompt([{
         type: 'list',
         name: 'platform',
-        message: 'Z której platformy pobrać issues?',
+        message: 'Which platform to fetch issues from?',
         choices: platforms.map(p => ({ name: p.charAt(0).toUpperCase() + p.slice(1), value: p })),
       }]);
       platform = answer.platform;
     }
   }
 
-  const s = ora(`Pobieranie issues z ${platform}...`).start();
+  const s = ora(`Fetching issues from ${platform}...`).start();
   try {
     let issues;
     if (platform === 'gitlab') {
       issues = await gitlab.listIssues(options);
     } else {
-      // GitHub używa search API dla issues
+      // GitHub uses search API for issues
       const github = require('../integrations/github');
       const octokit = await github.getClient();
       const { data: user } = await octokit.users.getAuthenticated();
@@ -65,7 +65,7 @@ async function listIssues(options = {}) {
       }));
     }
 
-    s.succeed(`Znaleziono ${issues.length} issues na platformie ${platform}`);
+    s.succeed(`Found ${issues.length} issues on ${platform}`);
     for (const issue of issues) {
       console.log(`  ${chalk.bold(`#${issue.iid}`)} ${issue.title}`);
       console.log(`    ${chalk.gray(issue.url)}`);

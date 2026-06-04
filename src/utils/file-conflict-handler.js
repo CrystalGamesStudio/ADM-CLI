@@ -1,15 +1,15 @@
 const fs = require('fs');
 
 /**
- * Wykrywa konflikt pliku — czy plik docelowy już istnieje
- * Zwraca 'no-conflict' lub 'conflict'
+ * Detects file conflict — whether target file already exists
+ * Returns 'no-conflict' or 'conflict'
  */
 function handleConflict({ targetPath, sourcePath }) {
   if (!fs.existsSync(targetPath)) {
     return 'no-conflict';
   }
 
-  // Sprawdź czy to symlink — jeśli tak, nie jest konfliktem
+  // Check if it's a symlink — not a conflict if so
   const stat = fs.lstatSync(targetPath);
   if (stat.isSymbolicLink()) {
     return 'no-conflict';
@@ -19,7 +19,7 @@ function handleConflict({ targetPath, sourcePath }) {
 }
 
 /**
- * Tworzy backup pliku (.backup) i zwraca ścieżkę backupu
+ * Creates a backup of a file (.backup) and returns the backup path
  */
 function createBackup(filePath) {
   const backupPath = filePath + '.backup';

@@ -19,7 +19,7 @@ function stripSensitive(msg) {
 function handleAdmError(err) {
   // String error
   if (typeof err === 'string') {
-    return new AdmError('unknown', err, 1, 'Run: adm --help for available commands.');
+    return new AdmError('unknown', err, 1, 'Type /help for available commands.');
   }
 
   // Network errors
@@ -29,14 +29,14 @@ function handleAdmError(err) {
 
   // Auth errors (401/403 without rate limit)
   if (err.status === 401) {
-    return new AdmError('auth', stripSensitive('Authentication failed. Token may be expired or invalid.'), 1, 'Run: adm connect github to reconnect.');
+    return new AdmError('auth', stripSensitive('Authentication failed. Token may be expired or invalid.'), 1, 'Run /connect to reconnect.');
   }
 
   if (err.status === 403) {
     if (err.headers && err.headers['x-ratelimit-remaining'] === '0') {
       return new AdmError('rate_limit', 'GitHub API rate limit exceeded.', 1, 'Wait a few minutes and try again.');
     }
-    return new AdmError('auth', stripSensitive('Authentication failed. Token may be expired or invalid.'), 1, 'Run: adm connect github to reconnect.');
+    return new AdmError('auth', stripSensitive('Authentication failed. Token may be expired or invalid.'), 1, 'Run /connect to reconnect.');
   }
 
   // Not found
@@ -47,7 +47,7 @@ function handleAdmError(err) {
   // User errors — validation, missing arguments
   const msg = stripSensitive(err.message || 'An unexpected error occurred.');
   if (/missing required argument|argument.*required|must provide/i.test(msg)) {
-    return new AdmError('user_error', msg, 2, 'Run: adm --help for available commands and options.');
+    return new AdmError('user_error', msg, 2, 'Type /help for available commands.');
   }
 
   // Unknown / fallback

@@ -6,11 +6,11 @@ async function execute(args, context = {}) {
   const rest = parts.slice(1).join(' ');
 
   if (!subcommand) {
-    return { output: chalk.yellow('Usage: pr <list|draft> [args]'), shouldExit: false };
+    return { output: chalk.yellow('Usage: /pr <list|draft> [args]'), shouldExit: false };
   }
 
   if (!context.github) {
-    return { output: chalk.yellow('GitHub not connected. Run `adm connect github` first.'), shouldExit: false };
+    return { output: chalk.yellow('GitHub not connected. Run /connect first.'), shouldExit: false };
   }
 
   if (subcommand === 'list') {
@@ -30,7 +30,7 @@ async function execute(args, context = {}) {
 
   if (subcommand === 'draft') {
     if (!rest) {
-      return { output: chalk.yellow('Usage: pr draft <title>'), shouldExit: false };
+      return { output: chalk.yellow('Usage: /pr draft <title>'), shouldExit: false };
     }
     try {
       const result = await context.github.createDraftPR(rest);

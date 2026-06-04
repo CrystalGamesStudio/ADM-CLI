@@ -1,10 +1,10 @@
-// Założenia:
-// - adm issue list wspiera zarówno GitHub jak i GitLab
-// - Gdy wiele platform podłączonych — interaktywny wybór (inquirer prompt)
-// - Gdy jedna platforma — używa jej bez pytania
-// - Gdy brak platform — błąd "brak podłączonych platform"
-// - --platform github|gitlab pomija interaktywny wybór
-// - Mockujemy integracje na granicy systemu
+// Assumptions:
+// - /issue list supports both GitHub and GitLab
+// - When multiple platforms connected — interactive selection (inquirer prompt)
+// - When single platform — uses it without asking
+// - When no platforms — error "no connected platforms"
+// - --platform github|gitlab skips interactive selection
+// - Mock integrations at system boundary
 
 jest.mock('../../../src/integrations/github', () => ({
   getClient: jest.fn(),
@@ -27,10 +27,10 @@ const github = require('../../../src/integrations/github');
 const gitlab = require('../../../src/integrations/gitlab');
 const keychain = require('../../../src/utils/keychain');
 
-describe('adm issue list', () => {
+describe('/issue list', () => {
   afterEach(() => jest.clearAllMocks());
 
-  test('zwraca issues z GitLab gdy tylko GitLab podłączony', async () => {
+  test('returns issues from GitLab when only GitLab connected', async () => {
     keychain.listStoredServices.mockResolvedValue(['gitlab']);
     const result = await listIssues({ platform: 'gitlab' });
     expect(result).toHaveLength(1);
@@ -38,12 +38,12 @@ describe('adm issue list', () => {
     expect(gitlab.listIssues).toHaveBeenCalled();
   });
 
-  test('rzuca błąd gdy brak podłączonych platform', async () => {
+  test('throws error when no platforms connected', async () => {
     keychain.listStoredServices.mockResolvedValue([]);
-    await expect(listIssues({})).rejects.toThrow('Brak podłączonych platform');
+    await expect(listIssues({})).rejects.toThrow('No connected platforms');
   });
 
-  test('używa flagi --platform bez interaktywnego wyboru', async () => {
+  test('uses --platform flag without interactive selection', async () => {
     keychain.listStoredServices.mockResolvedValue(['github', 'gitlab']);
     const result = await listIssues({ platform: 'gitlab' });
     expect(gitlab.listIssues).toHaveBeenCalled();

@@ -20,7 +20,7 @@ const COLORS = [
 ];
 
 /**
- * adm clock theme — live preview color picker.
+ * /clock theme — live preview color picker.
  * Arrow keys change color → clock updates instantly.
  * Enter to confirm. Custom → type hex.
  */

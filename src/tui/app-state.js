@@ -20,6 +20,9 @@ function createAppState() {
     aiMode: false,
     showSetup: false,
     setupDryRun: false,
+    connectStep: null,
+    connectPlatform: null,
+    connectCursor: 0,
   };
 
   let knowledge = null;
@@ -91,6 +94,11 @@ function createAppState() {
       return result;
     }
 
+    if (result.shouldStartConnect) {
+      startConnect();
+      return result;
+    }
+
     if (result.output) {
       state.messages.push({ text: result.output, type: 'command' });
     }
@@ -112,6 +120,50 @@ function createAppState() {
   function clearClockFlags() {
     state.runClock = false;
     state.runClockTheme = false;
+  }
+
+  function startConnect() {
+    state.connectStep = 'select';
+    state.connectCursor = 0;
+    state.messages.push({ text: 'Select a platform:', type: 'system' });
+  }
+
+  function moveConnectCursor(direction) {
+    const options = ['GitHub', 'GitLab'];
+    state.connectCursor = (state.connectCursor + direction + options.length) % options.length;
+  }
+
+  function selectConnectPlatform() {
+    const options = ['github', 'gitlab'];
+    const names = ['GitHub', 'GitLab'];
+    state.connectPlatform = options[state.connectCursor];
+    state.connectStep = 'token';
+    state.messages.push({ text: `Enter your ${names[state.connectCursor]} PAT:`, type: 'system' });
+  }
+
+  async function submitConnectToken(token) {
+    const platform = state.connectPlatform;
+    try {
+      if (platform === 'github') {
+        const gh = require('../integrations/github');
+        const result = await gh.connect(token);
+        state.messages.push({ text: `GitHub: connected as ${result.user.login}`, type: 'system' });
+      } else {
+        const gl = require('../integrations/gitlab');
+        const result = await gl.connect(token);
+        state.messages.push({ text: `GitLab: connected as ${result.user.username}`, type: 'system' });
+      }
+    } catch (err) {
+      state.messages.push({ text: err.message, type: 'ai-error' });
+    }
+    state.connectStep = null;
+    state.connectPlatform = null;
+  }
+
+  function cancelConnect() {
+    state.messages.push({ text: 'Cancelled.', type: 'system' });
+    state.connectStep = null;
+    state.connectPlatform = null;
   }
 
   function markSetupDone() {
@@ -143,11 +195,19 @@ function createAppState() {
     set runClock(v) { state.runClock = v; },
     get runClockTheme() { return state.runClockTheme; },
     set runClockTheme(v) { state.runClockTheme = v; },
+    get connectStep() { return state.connectStep; },
+    set connectStep(v) { state.connectStep = v; },
+    get connectPlatform() { return state.connectPlatform; },
+    get connectCursor() { return state.connectCursor; },
     processInput,
     getStatusBar,
     exitAI,
     exitSetup,
     clearClockFlags,
+    moveConnectCursor,
+    selectConnectPlatform,
+    submitConnectToken,
+    cancelConnect,
     markSetupDone,
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,

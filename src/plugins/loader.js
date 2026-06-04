@@ -3,12 +3,12 @@ const path = require('path');
 const chalk = require('chalk');
 
 /**
- * Plugin Loader — odkrywa i ładuje pliki .js z katalogu ~/.adm/plugins/
+ * Plugin Loader — discovers and loads .js files from ~/.adm/plugins/
  *
- * Każda wtyczka to moduł CommonJS eksportujący:
+ * Each plugin is a CommonJS module exporting:
  *   { name: string, description: string, execute(args, context): Promise<string> }
  *
- * Nazwa pliku minus .js = nazwa komendy (np. audit-deps.js → komenda audit-deps)
+ * File name minus .js = command name (e.g. audit-deps.js → command audit-deps)
  */
 function loadPlugins() {
   const configDir = process.env.ADM_CONFIG_DIR || path.join(require('os').homedir(), '.adm');
@@ -30,7 +30,7 @@ function loadPlugins() {
       const plugin = require(filePath);
 
       if (!plugin || typeof plugin.execute !== 'function') {
-        console.error(chalk.yellow(`  Plugin "${entry}" pominięty — brak funkcji execute.`));
+        console.error(chalk.yellow(`  Plugin "${entry}" skipped — missing execute function.`));
         continue;
       }
 
@@ -40,7 +40,7 @@ function loadPlugins() {
         execute: plugin.execute,
       });
     } catch (err) {
-      console.error(chalk.yellow(`  Plugin "${entry}" pominięty — błąd ładowania: ${err.message}`));
+      console.error(chalk.yellow(`  Plugin "${entry}" skipped — load error: ${err.message}`));
     }
   }
 

@@ -116,10 +116,10 @@ describe('/connect command in TUI', () => {
     expect(result.output).toMatch(/invalid token/i);
   });
 
-  test('/connect without subcommand shows usage', async () => {
+  test('/connect without subcommand starts interactive connect', async () => {
     const result = await registry.dispatch('/connect');
 
-    expect(result.output).toMatch(/usage/i);
+    expect(result.shouldStartConnect).toBe(true);
   });
 });
 

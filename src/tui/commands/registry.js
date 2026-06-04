@@ -212,7 +212,7 @@ async function dispatchAi(args, context) {
 
   const ai = context.ai;
   if (!ai) {
-    return { output: chalk.yellow('AI not configured. Set GLM_API_KEY or run `adm setup`.'), shouldExit: false, shouldClear: false };
+    return { output: chalk.yellow('AI not configured. Set GLM_API_KEY or run /setup.'), shouldExit: false, shouldClear: false };
   }
 
   try {
@@ -266,11 +266,10 @@ async function dispatchModel(args, context) {
   await writeConfig(config);
 
   const providerSpecific = [];
-  if (args === 'openai') {
-    providerSpecific.push(chalk.yellow('Set your API key: /config set ai.openaiKey <key>'));
-  } else if (args === 'anthropic') {
-    providerSpecific.push(chalk.yellow('Set your API key: /config set ai.anthropicKey <key>'));
-  } else if (args === 'ollama') {
+  if (provider.requiresAuth) {
+    providerSpecific.push(chalk.yellow(`Set your API key: /config set ai.${args}Key <key>`));
+  }
+  if (args === 'ollama') {
     providerSpecific.push(chalk.gray('Using default URL: http://localhost:11434'));
     providerSpecific.push(chalk.gray('Change with: /config set ai.ollamaUrl <url>'));
   }
@@ -323,9 +322,10 @@ async function dispatchConnect(args, context) {
 
   if (!subcommand) {
     return {
-      output: chalk.yellow('Usage: /connect <github|gitlab|list|disconnect> [--token <token>]'),
+      output: null,
       shouldExit: false,
       shouldClear: false,
+      shouldStartConnect: true,
     };
   }
 
@@ -406,7 +406,7 @@ async function dispatchConnect(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown connect subcommand: ${subcommand}. Use: github, gitlab, list, disconnect`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown connect subcommand: ${subcommand}. Type /connect list, /connect github, /connect gitlab, or /connect disconnect <service>`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /pr ───────────────────────────────────────────────────
@@ -470,7 +470,7 @@ async function dispatchPr(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown PR subcommand: ${subcommand}. Use: list, draft, comment`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown PR subcommand: ${subcommand}. Type /pr list, /pr draft <title>, or /pr comment <pr> <msg>`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /mr ───────────────────────────────────────────────────
@@ -530,7 +530,7 @@ async function dispatchMr(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown MR subcommand: ${subcommand}. Use: list, draft, comment`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown MR subcommand: ${subcommand}. Type /mr list, /mr draft <title>, or /mr comment <mr> <msg>`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /issue ────────────────────────────────────────────────
@@ -585,7 +585,7 @@ async function dispatchIssue(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown issue subcommand: ${subcommand}. Use: list`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown issue subcommand: ${subcommand}. Type /issue list`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /commit ───────────────────────────────────────────────
@@ -624,7 +624,7 @@ async function dispatchCommit(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown commit subcommand: ${subcommand}. Use: suggest`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown commit subcommand: ${subcommand}. Type /commit suggest`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /clock ────────────────────────────────────────────────
@@ -662,7 +662,7 @@ async function dispatchDotfiles(args, context) {
     }
   }
 
-  return { output: chalk.yellow(`Unknown dotfiles subcommand: ${subcommand}. Use: sync`), shouldExit: false, shouldClear: false };
+  return { output: chalk.yellow(`Unknown dotfiles subcommand: ${subcommand}. Type /dotfiles sync`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /uninstall ────────────────────────────────────────────

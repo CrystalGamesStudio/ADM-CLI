@@ -99,13 +99,13 @@ function startClock(config = {}, onExit) {
     lastKey = key;
   }
 
-  // ── stdin: raw mode — ukrywa wciśnięte klawisze ──────────
+  // ── stdin: raw mode — hides pressed keys ──────────
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.on('data', (buf) => {
       const ch = buf.toString();
-      // q, Escape lub Ctrl+C → wyjście
+      // q, Escape or Ctrl+C → exit
       if (ch === 'q' || ch === '\x1B' || ch === '\x03') cleanup();
     });
   }

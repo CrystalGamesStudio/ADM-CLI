@@ -3,9 +3,9 @@ const { loadPlugins } = require('./loader');
 const { createPluginContext } = require('./context');
 
 /**
- * Próbuje uruchomić wtyczkę o podanej nazwie.
- * Zwraca string (output wtyczki) lub null gdy wtyczka nie istnieje.
- * Błędy wykonania są obsługiwane gracefully — zwracany jest komunikat błędu.
+ * Tries to run a plugin by name.
+ * Returns string (plugin output) or null when plugin doesn't exist.
+ * Execution errors are handled gracefully — returns error message.
  */
 async function tryRunPlugin(commandName, args) {
   const plugins = loadPlugins();
@@ -18,7 +18,7 @@ async function tryRunPlugin(commandName, args) {
     const output = await plugin.execute(args || '', context);
     return output;
   } catch (err) {
-    return chalk.red(`  Błąd wtyczki "${commandName}": ${err.message}`);
+    return chalk.red(`  Plugin error "${commandName}": ${err.message}`);
   }
 }
 

@@ -6,7 +6,7 @@ const os = require('os');
 async function execute(args, context = {}) {
   const target = (args || '').trim();
   if (!target) {
-    return { output: chalk.yellow('Usage: open <owner/repo | branch-name>'), shouldExit: false };
+    return { output: chalk.yellow('Usage: /open <owner/repo | branch-name>'), shouldExit: false };
   }
 
   const exec = context.execSync || execSync;

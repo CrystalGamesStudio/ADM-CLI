@@ -6,15 +6,15 @@ async function execute(args, context = {}) {
   const appName = parts[1];
 
   if (!subcommand) {
-    return { output: chalk.yellow('Usage: app <launch> <name>'), shouldExit: false };
+    return { output: chalk.yellow('Usage: /app <launch> <name>'), shouldExit: false };
   }
 
   if (subcommand !== 'launch') {
-    return { output: chalk.yellow(`Unknown app subcommand: ${subcommand}. Use launch.`), shouldExit: false };
+    return { output: chalk.yellow(`Unknown app subcommand: ${subcommand}. Type /app launch <name>.`), shouldExit: false };
   }
 
   if (!appName) {
-    return { output: chalk.yellow('Usage: app launch <name>'), shouldExit: false };
+    return { output: chalk.yellow('Usage: /app launch <name>'), shouldExit: false };
   }
 
   const config = context.config || {};

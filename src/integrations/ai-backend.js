@@ -10,7 +10,7 @@ function createClient({ apiKey } = {}) {
 
 async function query(prompt, options = {}) {
   const client = options.client || createClient({ apiKey: options.apiKey });
-  if (!client) throw new Error('AI not configured. Set GLM_API_KEY or run `adm setup`.');
+  if (!client) throw new Error('AI not configured. Set GLM_API_KEY or run /setup.');
 
   const models = options.model ? [options.model] : FLASH_MODELS;
   let lastError;

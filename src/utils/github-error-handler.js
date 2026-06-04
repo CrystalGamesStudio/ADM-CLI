@@ -9,7 +9,7 @@ class GitHubError extends Error {
 
 function handleGitHubError(err) {
   if (err.status === 401 || err.status === 403) {
-    return new GitHubError('auth', 'Authentication failed. Token may be expired or invalid. Run `adm connect github` to reconnect.', err);
+    return new GitHubError('auth', 'Authentication failed. Token may be expired or invalid. Run /connect to reconnect.', err);
   }
   if (err.status === 403 && err.headers && err.headers['x-ratelimit-remaining'] === '0') {
     return new GitHubError('rate_limit', 'GitHub API rate limit exceeded. Wait a few minutes and try again.', err);

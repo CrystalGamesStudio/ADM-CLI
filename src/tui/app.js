@@ -27,8 +27,13 @@ function createApp(ink) {
         readConfig().then(cfg => {
           startClock(cfg || {}, () => {
             process.stdout.write('\x1B[2J\x1B[H');
+            if (process.stdin.isTTY) {
+              process.stdin.setRawMode(true);
+              process.stdin.resume();
+            }
             setShowClock(false);
             stateRef.current.clearClockFlags();
+            rerender();
           });
         });
       }
@@ -67,6 +72,59 @@ function createApp(ink) {
         return;
       }
 
+      // Connect mode — platform selection
+      if (stateRef.current.connectStep === 'select') {
+        if (key.upArrow) {
+          stateRef.current.moveConnectCursor(-1);
+          rerender();
+          return;
+        }
+        if (key.downArrow) {
+          stateRef.current.moveConnectCursor(1);
+          rerender();
+          return;
+        }
+        if (key.return) {
+          stateRef.current.selectConnectPlatform();
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.escape) {
+          stateRef.current.cancelConnect();
+          rerender();
+          return;
+        }
+        return;
+      }
+
+      // Connect mode — token input
+      if (stateRef.current.connectStep === 'token') {
+        if (key.escape) {
+          stateRef.current.cancelConnect();
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.return) {
+          const token = input.trim();
+          if (token) {
+            await stateRef.current.submitConnectToken(token);
+          }
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.backspace || key.delete) {
+          setInput(prev => prev.slice(0, -1));
+          return;
+        }
+        if (ch && !key.ctrl && !key.meta) {
+          setInput(prev => prev + ch);
+        }
+        return;
+      }
+
       // Tab — autocomplete command
       if (key.tab) {
         if (!stateRef.current.aiMode && input.startsWith('/')) {
@@ -93,6 +151,7 @@ function createApp(ink) {
       if (key.return) {
         const trimmed = input.trim();
         if (trimmed === '') return;
+        stateRef.current.messages.push({ text: trimmed, type: 'user' });
         const result = await stateRef.current.processInput(trimmed);
         setInput('');
         rerender();
@@ -174,9 +233,34 @@ function createApp(ink) {
       React.createElement(
         Box,
         { flexDirection: 'column', flexGrow: 1, paddingX: 1 },
-        ...messages.map((msg, i) =>
-          React.createElement(Text, { key: i, wrap: 'wrap', color: tc.text }, msg.text)
+        ...messages.map((msg, i) => {
+          if (msg.type === 'user') {
+            return React.createElement(
+              Box,
+              { key: i, marginTop: 0, marginBottom: 0 },
+              React.createElement(Text, { wrap: 'wrap', backgroundColor: tc.muted, color: tc.text }, ` ${msg.text} `),
+            );
+          }
+          return React.createElement(Text, { key: i, wrap: 'wrap', color: msg.type === 'ai-error' ? tc.error || tc.text : tc.text }, msg.text);
+        }),
+      ),
+      // Connect selection list
+      stateRef.current.connectStep === 'select' && React.createElement(
+        Box,
+        { flexDirection: 'column', paddingX: 1 },
+        React.createElement(
+          Box,
+          null,
+          React.createElement(Text, { color: stateRef.current.connectCursor === 0 ? tc.accent : tc.muted },
+            stateRef.current.connectCursor === 0 ? '  ● GitHub' : '  ○ GitHub'),
         ),
+        React.createElement(
+          Box,
+          null,
+          React.createElement(Text, { color: stateRef.current.connectCursor === 1 ? tc.accent : tc.muted },
+            stateRef.current.connectCursor === 1 ? '  ● GitLab' : '  ○ GitLab'),
+        ),
+        React.createElement(Text, { dimColor: true, color: tc.muted }, '  ↑↓ select · Enter confirm · ESC cancel'),
       ),
       // Suggestions
       suggestions.length > 0 && React.createElement(
@@ -184,14 +268,21 @@ function createApp(ink) {
         { paddingX: 1 },
         React.createElement(Text, { dimColor: true, color: tc.accent }, suggestions.map(s => `/${s}`).join('  ')),
       ),
-      // Input bar — accent color when AI mode is ON
-      React.createElement(
-        Box,
-        { borderStyle: 'single', borderColor: aiMode ? tc.secondary : tc.muted, paddingX: 1 },
-        React.createElement(Text, { color: aiMode ? tc.secondary : tc.success }, aiMode ? 'AI> ' : '> '),
-        React.createElement(Text, { color: aiMode ? tc.secondary : tc.text }, input),
-        React.createElement(Text, { dimColor: true }, '█'),
-      ),
+      // Input bar — changes label based on mode
+      (() => {
+        const connectToken = stateRef.current.connectStep === 'token';
+        const label = aiMode ? 'AI> ' : connectToken ? 'Token: ' : '> ';
+        const labelColor = aiMode ? tc.secondary : connectToken ? tc.warning : tc.success;
+        const borderColor = aiMode ? tc.secondary : connectToken ? tc.warning : tc.muted;
+        const textColor = aiMode ? tc.secondary : tc.text;
+        return React.createElement(
+          Box,
+          { borderStyle: 'single', borderColor, paddingX: 1 },
+          React.createElement(Text, { color: labelColor }, label),
+          React.createElement(Text, { color: textColor }, connectToken ? '*'.repeat(input.length) : input),
+          React.createElement(Text, { dimColor: true }, '█'),
+        );
+      })(),
     );
   };
 }
