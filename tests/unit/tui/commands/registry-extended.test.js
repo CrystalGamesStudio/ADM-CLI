@@ -425,37 +425,6 @@ describe('/uninstall command in TUI', () => {
   });
 });
 
-// ─── /plugins ──────────────────────────────────────────────
-describe('/plugins command in TUI', () => {
-  let registry;
-
-  beforeEach(() => {
-    registry = createRegistry({});
-    jest.clearAllMocks();
-  });
-
-  test('/plugins lists loaded plugins', async () => {
-    loadPlugins.mockReturnValue(new Map([
-      ['audit-deps', { name: 'audit-deps', description: 'Audit dependencies', execute: jest.fn() }],
-      ['my-tool', { name: 'my-tool', description: 'Custom tool', execute: jest.fn() }],
-    ]));
-
-    const result = await registry.dispatch('/plugins');
-
-    expect(result.output).toMatch(/audit-deps/);
-    expect(result.output).toMatch(/my-tool/);
-    expect(result.output).toMatch(/Audit dependencies/);
-  });
-
-  test('/plugins with no plugins shows message', async () => {
-    loadPlugins.mockReturnValue(new Map());
-
-    const result = await registry.dispatch('/plugins');
-
-    expect(result.output).toMatch(/no plugins/i);
-  });
-});
-
 // ─── /<plugin-name> execution ──────────────────────────────
 describe('plugin execution via TUI', () => {
   let registry;
@@ -497,7 +466,7 @@ describe('/help shows all migrated commands', () => {
 
   const expectedCommands = [
     'connect', 'pr', 'mr', 'issue', 'commit',
-    'clock', 'dotfiles', 'uninstall', 'plugins',
+    'clock', 'dotfiles', 'uninstall',
   ];
 
   test.each(expectedCommands)('/help output contains /%s', async () => {

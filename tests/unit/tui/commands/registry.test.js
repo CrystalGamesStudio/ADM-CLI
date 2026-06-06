@@ -36,7 +36,6 @@ describe('Command Registry — dispatch', () => {
     expect(result.output).toMatch(/exit/);
     expect(result.output).toMatch(/clear/);
     expect(result.output).toMatch(/theme/);
-    expect(result.output).toMatch(/config/);
     expect(result.output).toMatch(/status/);
   });
 
@@ -68,6 +67,16 @@ describe('Command Registry — dispatch', () => {
     expect(result.output).toMatch(/Unknown command/);
     expect(result.output).not.toMatch(/Did you mean/);
   });
+
+  test('/plugins returns unknown command (Issue #11)', async () => {
+    const result = await registry.dispatch('plugins');
+    expect(result.output).toMatch(/Unknown command/);
+  });
+
+  test('/config returns unknown command (Issue #11)', async () => {
+    const result = await registry.dispatch('config');
+    expect(result.output).toMatch(/Unknown command/);
+  });
 });
 
 describe('Command Registry — autocomplete', () => {
@@ -83,7 +92,6 @@ describe('Command Registry — autocomplete', () => {
     expect(matches).toContain('exit');
     expect(matches).toContain('clear');
     expect(matches).toContain('theme');
-    expect(matches).toContain('config');
     expect(matches).toContain('status');
   });
 
@@ -92,10 +100,12 @@ describe('Command Registry — autocomplete', () => {
     expect(matches).toEqual(['help']);
   });
 
-  test('partial "c" matches clear and config', () => {
+  test('partial "c" matches clear, connect, commit, and clock', () => {
     const matches = registry.autocomplete('c');
     expect(matches).toContain('clear');
-    expect(matches).toContain('config');
+    expect(matches).toContain('connect');
+    expect(matches).toContain('commit');
+    expect(matches).toContain('clock');
   });
 
   test('no match returns empty array', () => {

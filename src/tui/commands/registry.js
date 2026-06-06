@@ -8,7 +8,6 @@ const BUILTIN_COMMANDS = [
   { name: 'exit', description: 'Exit ADM' },
   { name: 'clear', description: 'Clear message history' },
   { name: 'theme', description: 'List or switch themes' },
-  { name: 'config', description: 'Show current configuration' },
   { name: 'status', description: 'Show git status' },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
   { name: 'model', description: 'Show or switch AI provider' },
@@ -21,7 +20,6 @@ const BUILTIN_COMMANDS = [
   { name: 'clock', description: 'Show ASCII clock' },
   { name: 'dotfiles', description: 'Sync dotfiles from repo' },
   { name: 'uninstall', description: 'Remove ADM CLI config' },
-  { name: 'plugins', description: 'List loaded plugins' },
 ];
 
 function createRegistry(context = {}) {
@@ -70,9 +68,6 @@ function createRegistry(context = {}) {
     if (cmdName === 'theme') {
       return await dispatchTheme(args, context);
     }
-    if (cmdName === 'config') {
-      return await dispatchConfig();
-    }
     if (cmdName === 'status') {
       return dispatchStatus(context);
     }
@@ -108,9 +103,6 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'uninstall') {
       return await dispatchUninstall(context);
-    }
-    if (cmdName === 'plugins') {
-      return dispatchPlugins(context);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -165,15 +157,6 @@ async function dispatchTheme(args, context) {
       shouldClear: false,
     };
   }
-}
-
-async function dispatchConfig() {
-  const config = await readConfig();
-  return {
-    output: JSON.stringify(config, null, 2),
-    shouldExit: false,
-    shouldClear: false,
-  };
 }
 
 function dispatchStatus(context) {
@@ -674,22 +657,6 @@ async function dispatchUninstall(context) {
   } catch (err) {
     return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
   }
-}
-
-// ─── /plugins ──────────────────────────────────────────────
-function dispatchPlugins(context) {
-  const { loadPlugins } = require('../../plugins/loader');
-  const plugins = loadPlugins();
-
-  if (plugins.size === 0) {
-    return { output: chalk.yellow('No plugins installed. Add .js files to ~/.adm/plugins/'), shouldExit: false, shouldClear: false };
-  }
-
-  const lines = [chalk.bold('Loaded plugins:\n')];
-  for (const [name, plugin] of plugins) {
-    lines.push(`  ${chalk.green(name.padEnd(16))} ${plugin.description || '(no description)'}`);
-  }
-  return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
 }
 
 // ─── Plugin fallback ───────────────────────────────────────

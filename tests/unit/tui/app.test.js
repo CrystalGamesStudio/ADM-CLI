@@ -70,11 +70,11 @@ describe('Command suggestions', () => {
     expect(suggestions).toEqual(['help']);
   });
 
-  test('"/c" returns "clear" and "config"', () => {
+  test('"/c" returns "clear" and "connect"', () => {
     const state = createAppState();
     const suggestions = state.getSuggestions('/c');
     expect(suggestions).toContain('clear');
-    expect(suggestions).toContain('config');
+    expect(suggestions).toContain('connect');
   });
 
   test('"help" (without /) also works', () => {
