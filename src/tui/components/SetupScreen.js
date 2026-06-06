@@ -55,6 +55,26 @@ function createSetupState(opts = {}) {
       state.page = 0;
     },
 
+    getVisibleItems() {
+      if (state.step === 'categories') return state.categories;
+      if (state.step === 'tools') return state.getToolsForSelectedCategories();
+      if (state.step === 'summary') return state.installResults || [];
+      return [];
+    },
+
+    handleArrow(direction) {
+      const totalPages = state.getTotalPages();
+      if (direction === 'right' && state.page < totalPages - 1) {
+        state.page++;
+      } else if (direction === 'left' && state.page > 0) {
+        state.page--;
+      }
+    },
+
+    getTotalPages() {
+      return Math.max(1, Math.ceil(state.getVisibleItems().length / PAGE_SIZE));
+    },
+
     cancel() {
       onExit();
     },
@@ -109,13 +129,9 @@ function createSetupScreen(ink) {
 
     const triggerRender = () => setRenderKey(k => k + 1);
 
-    const allItems = s.step === 'categories'
-      ? s.categories
-      : s.step === 'tools'
-        ? s.getToolsForSelectedCategories()
-        : [];
+    const allItems = s.getVisibleItems();
 
-    const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
+    const totalPages = s.getTotalPages();
     const pageStart = s.page * PAGE_SIZE;
     const pageItems = allItems.slice(pageStart, pageStart + PAGE_SIZE);
 
@@ -144,19 +160,15 @@ function createSetupScreen(ink) {
 
       // Page left/right
       if (key.leftArrow) {
-        if (s.page > 0) {
-          s.page--;
-          s.cursor = s.page * PAGE_SIZE;
-          triggerRender();
-        }
+        s.handleArrow('left');
+        s.cursor = s.page * PAGE_SIZE;
+        triggerRender();
         return;
       }
       if (key.rightArrow) {
-        if (s.page < totalPages - 1) {
-          s.page++;
-          s.cursor = s.page * PAGE_SIZE;
-          triggerRender();
-        }
+        s.handleArrow('right');
+        s.cursor = s.page * PAGE_SIZE;
+        triggerRender();
         return;
       }
 
