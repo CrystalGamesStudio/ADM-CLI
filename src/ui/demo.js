@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
-const { renderClock } = require('./ascii-clock');
 const { resolveTheme } = require('./theme');
 const { createSpinner } = require('./spinner');
 const {
@@ -38,15 +37,7 @@ const custom = resolveTheme({ theme: { primary: '#ff6600', accent: '#00ffcc' } }
 console.log(`  primary:  ${chalk.hex(custom.colors.primary)('■■■■')} ${custom.colors.primary}`);
 console.log(`  accent:   ${chalk.hex(custom.colors.accent)('■■■■')} ${custom.colors.accent}`);
 
-// 3. ASCII Clock
-console.log(chalk.cyan('\n--- ASCII Clock ---'));
-const now = new Date();
-const lines = renderClock(now);
-const timeStr = now.toLocaleTimeString();
-console.log(chalk.hex(dark.colors.primary)(lines.join('\n')));
-console.log(chalk.gray(`  ${timeStr}`));
-
-// 4. Spinner
+// 3. Spinner
 console.log(chalk.cyan('\n--- Spinner Demo ---'));
 const spinner = createSpinner('Loading something...', { isEnabled: true });
 spinner.start();

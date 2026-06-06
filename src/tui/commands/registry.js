@@ -17,7 +17,6 @@ const BUILTIN_COMMANDS = [
   { name: 'mr', description: 'Merge request operations (GitLab)' },
   { name: 'issue', description: 'List issues from connected platform' },
   { name: 'commit', description: 'Commit subcommands: suggest' },
-  { name: 'clock', description: 'Show ASCII clock' },
   { name: 'dotfiles', description: 'Sync dotfiles from repo' },
   { name: 'uninstall', description: 'Remove ADM CLI config' },
 ];
@@ -94,9 +93,6 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'commit') {
       return await dispatchCommit(args, context);
-    }
-    if (cmdName === 'clock') {
-      return dispatchClock(args, context);
     }
     if (cmdName === 'dotfiles') {
       return await dispatchDotfiles(args, context);
@@ -608,18 +604,6 @@ async function dispatchCommit(args, context) {
   }
 
   return { output: chalk.yellow(`Unknown commit subcommand: ${subcommand}. Type /commit suggest`), shouldExit: false, shouldClear: false };
-}
-
-// ─── /clock ────────────────────────────────────────────────
-function dispatchClock(args, context) {
-  const parts = (args || '').trim().split(/\s+/);
-  const subcommand = parts[0];
-
-  if (subcommand === 'theme') {
-    return { shouldRunClockTheme: true, shouldExit: false, shouldClear: false };
-  }
-
-  return { shouldRunClock: true, shouldExit: false, shouldClear: false };
 }
 
 // ─── /dotfiles ─────────────────────────────────────────────

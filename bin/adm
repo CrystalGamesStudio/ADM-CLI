@@ -12,9 +12,7 @@ const { syncDotfilesCommand } = require('../src/commands/dotfiles');
 const { uninstall } = require('../src/commands/uninstall');
 const { readConfig } = require('../src/config');
 const { start: startAssistant } = require('../src/commands/assistant');
-const { startClock } = require('../src/commands/clock');
 const { themeCommand } = require('../src/commands/theme');
-const { clockThemePicker } = require('../src/commands/clock-theme');
 
 const program = new Command();
 program
@@ -225,28 +223,6 @@ dotfilesCmd
     try {
       const only = opts.only ? opts.only.split(',') : undefined;
       await syncDotfilesCommand({ repo: opts.repo, copy: opts.copy, only });
-    } catch (err) {
-      exitWithError(err);
-    }
-  });
-
-// ── adm clock ───────────────────────────────────────────────
-const clockCmd = program
-  .command('clock')
-  .description('ASCII clock');
-
-clockCmd
-  .action(async () => {
-    const config = await readConfig();
-    startClock(config);
-  });
-
-clockCmd
-  .command('theme')
-  .description('Pick clock accent color')
-  .action(async () => {
-    try {
-      await clockThemePicker();
     } catch (err) {
       exitWithError(err);
     }

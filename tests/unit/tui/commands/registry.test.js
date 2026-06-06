@@ -100,12 +100,11 @@ describe('Command Registry — autocomplete', () => {
     expect(matches).toEqual(['help']);
   });
 
-  test('partial "c" matches clear, connect, commit, and clock', () => {
+  test('partial "c" matches clear, connect, and commit', () => {
     const matches = registry.autocomplete('c');
     expect(matches).toContain('clear');
     expect(matches).toContain('connect');
     expect(matches).toContain('commit');
-    expect(matches).toContain('clock');
   });
 
   test('no match returns empty array', () => {

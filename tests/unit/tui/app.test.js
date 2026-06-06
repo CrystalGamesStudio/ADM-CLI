@@ -126,32 +126,6 @@ describe('TUI App component structure', () => {
   });
 });
 
-describe('App state — /clock and /clock theme', () => {
-  test('processInput(/clock) sets runClock flag', async () => {
-    const state = createAppState();
-    const result = await state.processInput('/clock');
-
-    expect(state.runClock).toBe(true);
-  });
-
-  test('processInput(/clock theme) sets runClockTheme flag', async () => {
-    const state = createAppState();
-    const result = await state.processInput('/clock theme');
-
-    expect(state.runClockTheme).toBe(true);
-  });
-
-  test('clearClockFlags() resets both flags', async () => {
-    const state = createAppState();
-    await state.processInput('/clock');
-    expect(state.runClock).toBe(true);
-
-    state.clearClockFlags();
-    expect(state.runClock).toBe(false);
-    expect(state.runClockTheme).toBe(false);
-  });
-});
-
 describe('App state — /theme switches theme and updates colors', () => {
   test('/theme cyberpunk saves theme to config', async () => {
     jest.resetModules();

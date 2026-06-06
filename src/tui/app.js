@@ -1,8 +1,6 @@
 const React = require('react');
 const { createAppState } = require('./app-state');
 const { createSetupScreen } = require('./components/SetupScreen');
-const { startClock } = require('../commands/clock');
-const { clockThemePicker } = require('../commands/clock-theme');
 const { resolveTheme } = require('../ui/theme');
 const { readConfig } = require('../config');
 
@@ -16,46 +14,7 @@ function createApp(ink) {
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
     const [showSetup, setShowSetup] = React.useState(false);
-    const [showClock, setShowClock] = React.useState(false);
     const { exit } = useApp();
-
-    // Full-screen clock: when flag is set, run startClock outside ink
-    React.useEffect(() => {
-      if (stateRef.current.runClock) {
-        stateRef.current.runClock = false;
-        setShowClock(true);
-        readConfig().then(cfg => {
-          startClock(cfg || {}, () => {
-            process.stdout.write('\x1B[2J\x1B[H');
-            if (process.stdin.isTTY) {
-              process.stdin.setRawMode(true);
-              process.stdin.resume();
-            }
-            setShowClock(false);
-            stateRef.current.clearClockFlags();
-            rerender();
-          });
-        });
-      }
-    }, [stateRef.current.runClock]);
-
-    React.useEffect(() => {
-      if (stateRef.current.runClockTheme) {
-        stateRef.current.runClockTheme = false;
-        setShowClock(true);
-        clockThemePicker().then(() => {
-          process.stdout.write('\x1B[2J\x1B[H');
-          if (process.stdin.isTTY) {
-            process.stdin.setRawMode(true);
-            process.stdin.resume();
-          }
-          setShowClock(false);
-          stateRef.current.clearClockFlags();
-          stateRef.current.messages.push({ text: 'Clock theme saved.', type: 'system' });
-          rerender();
-        });
-      }
-    }, [stateRef.current.runClockTheme]);
 
     const rerender = () => {
       setMessages([...stateRef.current.messages]);
@@ -182,11 +141,6 @@ function createApp(ink) {
       tc = resolveTheme({ theme: themeName }).colors;
     } catch {
       tc = resolveTheme({}).colors;
-    }
-
-    // When clock is running full-screen, don't render anything
-    if (showClock) {
-      return null;
     }
 
     // When setup is active, render SetupScreen instead of main view

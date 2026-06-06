@@ -32,7 +32,7 @@ describe('adm --help', () => {
   test('lists all major commands', () => {
     const result = adm(['--help']);
     const output = result.stdout;
-    const commands = ['setup', 'installers', 'connect', 'pr', 'mr', 'issue-list', 'dotfiles', 'clock', 'theme', 'uninstall', 'assistant'];
+    const commands = ['setup', 'installers', 'connect', 'pr', 'mr', 'issue-list', 'dotfiles', 'theme', 'uninstall', 'assistant'];
     for (const cmd of commands) {
       expect(output).toContain(cmd);
     }

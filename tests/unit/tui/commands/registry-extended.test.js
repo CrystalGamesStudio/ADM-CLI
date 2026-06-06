@@ -38,10 +38,6 @@ jest.mock('../../../../src/utils/keychain', () => ({
   deleteToken: jest.fn(),
 }));
 
-jest.mock('../../../../src/ui/ascii-clock', () => ({
-  renderClock: jest.fn(() => ['  ##  ', ' #  # ', ' #  # ', ' #  # ', '  ##  ']),
-}));
-
 jest.mock('../../../../src/commands/dotfiles', () => ({
   syncDotfilesCommand: jest.fn(),
 }));
@@ -57,7 +53,6 @@ jest.mock('../../../../src/plugins/loader', () => ({
 const github = require('../../../../src/integrations/github');
 const gitlab = require('../../../../src/integrations/gitlab');
 const { listStoredServices } = require('../../../../src/utils/keychain');
-const { renderClock } = require('../../../../src/ui/ascii-clock');
 const { syncDotfilesCommand } = require('../../../../src/commands/dotfiles');
 const { uninstall } = require('../../../../src/commands/uninstall');
 const { loadPlugins } = require('../../../../src/plugins/loader');
@@ -329,30 +324,6 @@ describe('/commit command in TUI', () => {
   });
 });
 
-// ─── /clock ────────────────────────────────────────────────
-describe('/clock command in TUI', () => {
-  let registry;
-
-  beforeEach(() => {
-    registry = createRegistry({});
-    jest.clearAllMocks();
-  });
-
-  test('/clock returns shouldRunClock flag for full-screen mode', async () => {
-    const result = await registry.dispatch('/clock');
-
-    expect(result.shouldRunClock).toBe(true);
-    expect(result.shouldExit).toBe(false);
-  });
-
-  test('/clock theme returns shouldRunClockTheme flag', async () => {
-    const result = await registry.dispatch('/clock theme');
-
-    expect(result.shouldRunClockTheme).toBe(true);
-    expect(result.shouldExit).toBe(false);
-  });
-});
-
 // ─── /dotfiles ─────────────────────────────────────────────
 describe('/dotfiles command in TUI', () => {
   let registry;
@@ -466,7 +437,7 @@ describe('/help shows all migrated commands', () => {
 
   const expectedCommands = [
     'connect', 'pr', 'mr', 'issue', 'commit',
-    'clock', 'dotfiles', 'uninstall',
+    'dotfiles', 'uninstall',
   ];
 
   test.each(expectedCommands)('/help output contains /%s', async () => {
