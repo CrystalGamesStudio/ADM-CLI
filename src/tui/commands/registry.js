@@ -189,16 +189,22 @@ async function dispatchAi(args, context) {
     return { shouldToggleAI: true, shouldExit: false, shouldClear: false };
   }
 
-  const ai = context.ai;
-  if (!ai) {
-    return { output: chalk.yellow('AI not configured. Set GLM_API_KEY or run /setup.'), shouldExit: false, shouldClear: false };
-  }
-
   try {
-    const response = await ai.query(args);
-    return { output: `GLM: ${response}`, shouldExit: false, shouldClear: false };
+    const config = await readConfig();
+    const providerId = config.aiProvider || 'glm-free';
+    const apiKey = config[`ai.${providerId}Key`] || process.env.GLM_API_KEY;
+
+    if (!apiKey && providerId !== 'ollama') {
+      return { output: chalk.yellow(`AI not configured. No API key for ${providerId}. Use /model ${providerId} to set one.`), shouldExit: false, shouldClear: false };
+    }
+
+    const { queryWithProvider } = require('../../integrations/ai-providers/registry');
+    const response = await queryWithProvider(providerId, args, { apiKey });
+
+    const prefix = providerId === 'glm-free' || providerId === 'glm-pro' ? 'GLM' : providerId;
+    return { output: `${prefix}: ${response}`, shouldToggleAI: true, shouldExit: false, shouldClear: false };
   } catch (err) {
-    return { output: chalk.red(`AI error: ${err.message}`), shouldExit: false, shouldClear: false };
+    return { output: chalk.red(`AI error: ${err.message}`), shouldToggleAI: true, shouldExit: false, shouldClear: false };
   }
 }
 
@@ -241,13 +247,24 @@ async function dispatchModel(args, context) {
     };
   }
 
+  // If provider requires auth and no key is stored, prompt for inline token input
+  if (provider.requiresAuth) {
+    const configKey = `ai.${args}Key`;
+    if (!config[configKey]) {
+      return {
+        output: null,
+        shouldPromptModelToken: true,
+        modelProvider: args,
+        shouldExit: false,
+        shouldClear: false,
+      };
+    }
+  }
+
   config.aiProvider = args;
   await writeConfig(config);
 
   const providerSpecific = [];
-  if (provider.requiresAuth) {
-    providerSpecific.push(chalk.yellow(`Set your API key: /config set ai.${args}Key <key>`));
-  }
   if (args === 'ollama') {
     providerSpecific.push(chalk.gray('Using default URL: http://localhost:11434'));
     providerSpecific.push(chalk.gray('Change with: /config set ai.ollamaUrl <url>'));

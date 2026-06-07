@@ -1,5 +1,6 @@
 const { createRegistry } = require('./commands/registry');
 const { resolveTheme } = require('../ui/theme');
+const { readConfig, writeConfig } = require('../config');
 const ai = require('../integrations/ai-backend');
 const { getKnowledge } = require('../ai/knowledge');
 
@@ -23,6 +24,9 @@ function createAppState() {
     connectStep: null,
     connectPlatform: null,
     connectCursor: 0,
+    modelStep: null,
+    modelProvider: null,
+    aiLoading: false,
   };
 
   let knowledge = null;
@@ -48,18 +52,33 @@ function createAppState() {
       return { output: null, shouldExit: false, shouldClear: false };
     }
 
-    // In AI mode, send non-command input directly to AI backend
+    // In AI mode, send non-command input to the active AI provider
     if (state.aiMode) {
+      state.aiLoading = true;
       try {
         const messages = [];
         if (knowledge) {
           messages.push({ role: 'system', content: knowledge });
         }
         messages.push({ role: 'user', content: input });
-        const response = await ai.query(input, { messages });
-        state.messages.push({ text: `GLM: ${response}`, type: 'ai' });
+
+        const cfg = await readConfig();
+        const providerId = cfg.aiProvider || 'glm-free';
+        const apiKey = cfg[`ai.${providerId}Key`] || process.env.GLM_API_KEY;
+
+        if (!apiKey && providerId !== 'ollama') {
+          throw new Error(`AI not configured. No API key for ${providerId}. Use /model ${providerId} to set one.`);
+        }
+
+        const { queryWithProvider } = require('../integrations/ai-providers/registry');
+        const response = await queryWithProvider(providerId, input, { apiKey, messages });
+
+        const prefix = providerId === 'glm-free' || providerId === 'glm-pro' ? 'GLM' : providerId;
+        state.messages.push({ text: `${prefix}: ${response}`, type: 'ai' });
       } catch (err) {
         state.messages.push({ text: `AI error: ${err.message}`, type: 'ai-error' });
+      } finally {
+        state.aiLoading = false;
       }
       return { output: null, shouldExit: false, shouldClear: false };
     }
@@ -75,6 +94,9 @@ function createAppState() {
       state.aiMode = !state.aiMode;
       const label = state.aiMode ? 'AI: ON — type a question, /exit to leave AI mode' : 'AI: off';
       state.messages.push({ text: label, type: 'system' });
+      if (result.output) {
+        state.messages.push({ text: result.output, type: 'ai' });
+      }
       return result;
     }
 
@@ -86,6 +108,13 @@ function createAppState() {
 
     if (result.shouldStartConnect) {
       startConnect();
+      return result;
+    }
+
+    if (result.shouldPromptModelToken) {
+      state.modelStep = 'token';
+      state.modelProvider = result.modelProvider;
+      state.messages.push({ text: `Enter your ${result.modelProvider} API key:`, type: 'system' });
       return result;
     }
 
@@ -151,6 +180,26 @@ function createAppState() {
     state.connectPlatform = null;
   }
 
+  async function submitModelToken(token) {
+    const provider = state.modelProvider;
+    const { getProvider } = require('../integrations/ai-providers/registry');
+    const providerInfo = getProvider(provider);
+    const config = await readConfig();
+    config[`ai.${provider}Key`] = token;
+    config.aiProvider = provider;
+    await writeConfig(config);
+    const name = providerInfo ? providerInfo.name : provider;
+    state.messages.push({ text: `Provider switched to ${name} (${provider}).`, type: 'system' });
+    state.modelStep = null;
+    state.modelProvider = null;
+  }
+
+  function cancelModelToken() {
+    state.messages.push({ text: 'Cancelled.', type: 'system' });
+    state.modelStep = null;
+    state.modelProvider = null;
+  }
+
   function markSetupDone() {
     state.setupInstalled = true;
   }
@@ -188,6 +237,11 @@ function createAppState() {
     selectConnectPlatform,
     submitConnectToken,
     cancelConnect,
+    submitModelToken,
+    cancelModelToken,
+    get modelStep() { return state.modelStep; },
+    get modelProvider() { return state.modelProvider; },
+    get aiLoading() { return state.aiLoading; },
     markSetupDone,
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,

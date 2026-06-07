@@ -32,16 +32,16 @@ describe('/model command', () => {
     expect(result.output).toMatch(/glm-free/i);
   });
 
-  test('/model openai sets provider and prompts for API key', async () => {
+  test('/model openai returns shouldPromptModelToken when no key stored', async () => {
     const result = await registry.dispatch('model openai');
-    expect(result.output).toMatch(/openai/i);
-    expect(result.output).toMatch(/api key/i);
+    expect(result.shouldPromptModelToken).toBe(true);
+    expect(result.modelProvider).toBe('openai');
   });
 
-  test('/model anthropic sets provider and prompts for API key', async () => {
+  test('/model anthropic returns shouldPromptModelToken when no key stored', async () => {
     const result = await registry.dispatch('model anthropic');
-    expect(result.output).toMatch(/anthropic/i);
-    expect(result.output).toMatch(/api key/i);
+    expect(result.shouldPromptModelToken).toBe(true);
+    expect(result.modelProvider).toBe('anthropic');
   });
 
   test('/model ollama sets provider and shows URL info', async () => {

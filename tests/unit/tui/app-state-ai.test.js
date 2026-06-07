@@ -63,45 +63,43 @@ describe('AI mode — app-state toggle', () => {
 
 describe('AI mode — queries', () => {
   let appState;
-  let originalFetch;
 
   beforeEach(() => {
-    process.env.GLM_API_KEY = 'test-key-for-ai-mode';
-    originalFetch = global.fetch;
+    jest.resetModules();
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      writeConfig: jest.fn(() => Promise.resolve()),
+    }));
+    jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
+      queryWithProvider: jest.fn(() => Promise.resolve('Git is a version control system.')),
+      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      listProviders: jest.fn(() => []),
+    }));
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
-    delete process.env.GLM_API_KEY;
+    jest.restoreAllMocks();
   });
 
-  test('in AI mode, input is sent to GLM API', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { role: 'assistant', content: 'Git is a version control system.' } }],
-      }),
-    });
+  test('in AI mode, input is sent to active provider', async () => {
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    const { queryWithProvider } = require('../../../src/integrations/ai-providers/registry');
 
-    appState = createAppState();
+    appState = createState();
     await appState.processInput('ai'); // toggle ON
     await appState.processInput('what is git?');
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/chat/completions'),
-      expect.objectContaining({ method: 'POST' }),
+    expect(queryWithProvider).toHaveBeenCalledWith(
+      'glm-free',
+      'what is git?',
+      expect.objectContaining({ apiKey: 'test-key', messages: expect.any(Array) }),
     );
   });
 
   test('AI response appears in messages with GLM: prefix', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { role: 'assistant', content: 'Git is a version control system.' } }],
-      }),
-    });
+    const { createAppState: createState } = require('../../../src/tui/app-state');
 
-    appState = createAppState();
+    appState = createState();
     await appState.processInput('ai');
     await appState.processInput('what is git?');
 
@@ -113,26 +111,24 @@ describe('AI mode — queries', () => {
   });
 
   test('in AI mode, input is NOT dispatched to command registry', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { role: 'assistant', content: 'ok' } }],
-      }),
-    });
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    const { queryWithProvider } = require('../../../src/integrations/ai-providers/registry');
 
-    appState = createAppState();
+    appState = createState();
     await appState.processInput('ai'); // toggle ON
     // 'help' would normally go to registry — in AI mode it should go to AI instead
     await appState.processInput('help');
 
-    expect(global.fetch).toHaveBeenCalled();
+    expect(queryWithProvider).toHaveBeenCalled();
     const msgs = appState.messages;
     const last = msgs[msgs.length - 1];
     expect(last.type).toBe('ai');
   });
 
   test('after exiting AI mode, input goes back to registry', async () => {
-    appState = createAppState();
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+
+    appState = createState();
     await appState.processInput('ai');
     await appState.processInput('exit');
 
@@ -141,9 +137,19 @@ describe('AI mode — queries', () => {
   });
 
   test('AI query failure shows friendly error in messages', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('Network timeout'));
+    jest.resetModules();
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      writeConfig: jest.fn(() => Promise.resolve()),
+    }));
+    jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
+      queryWithProvider: jest.fn(() => Promise.reject(new Error('Network timeout'))),
+      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      listProviders: jest.fn(() => []),
+    }));
 
-    appState = createAppState();
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    appState = createState();
     await appState.processInput('ai');
     await appState.processInput('what is git?');
 
@@ -154,9 +160,19 @@ describe('AI mode — queries', () => {
   });
 
   test('AI query failure does not exit AI mode', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('Network timeout'));
+    jest.resetModules();
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      writeConfig: jest.fn(() => Promise.resolve()),
+    }));
+    jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
+      queryWithProvider: jest.fn(() => Promise.reject(new Error('Network timeout'))),
+      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      listProviders: jest.fn(() => []),
+    }));
 
-    appState = createAppState();
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    appState = createState();
     await appState.processInput('ai');
     await appState.processInput('what is git?');
 
@@ -166,63 +182,67 @@ describe('AI mode — queries', () => {
 
 describe('AI mode — knowledge injection', () => {
   let appState;
-  let originalFetch;
 
   beforeEach(() => {
-    process.env.GLM_API_KEY = 'test-key-for-knowledge';
-    originalFetch = global.fetch;
     jest.resetModules();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
-    delete process.env.GLM_API_KEY;
+    jest.restoreAllMocks();
   });
 
-  test('AI query includes knowledge as system message in API call', async () => {
+  test('AI query includes knowledge as system message in messages', async () => {
     jest.doMock('../../../src/ai/knowledge', () => ({
       getKnowledge: jest.fn().mockReturnValue('ADM is a developer CLI tool.'),
     }));
-
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { role: 'assistant', content: 'ADM helps devs.' } }],
-      }),
-    });
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      writeConfig: jest.fn(() => Promise.resolve()),
+    }));
+    const mockQueryWithProvider = jest.fn(() => Promise.resolve('ADM helps devs.'));
+    jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
+      queryWithProvider: mockQueryWithProvider,
+      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      listProviders: jest.fn(() => []),
+    }));
 
     const { createAppState: createState } = require('../../../src/tui/app-state');
     appState = createState();
     await appState.processInput('ai');
     await appState.processInput('what is adm?');
 
-    const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
-    expect(callBody.messages[0].role).toBe('system');
-    expect(callBody.messages[0].content).toContain('ADM is a developer CLI tool');
-    expect(callBody.messages[1].role).toBe('user');
-    expect(callBody.messages[1].content).toBe('what is adm?');
+    const callArgs = mockQueryWithProvider.mock.calls[0];
+    const messages = callArgs[2].messages;
+    expect(messages[0].role).toBe('system');
+    expect(messages[0].content).toContain('ADM is a developer CLI tool');
+    expect(messages[1].role).toBe('user');
+    expect(messages[1].content).toBe('what is adm?');
   });
 
   test('AI query works without knowledge (graceful degradation)', async () => {
     jest.doMock('../../../src/ai/knowledge', () => ({
       getKnowledge: jest.fn().mockReturnValue(null),
     }));
-
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { role: 'assistant', content: 'ok' } }],
-      }),
-    });
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      writeConfig: jest.fn(() => Promise.resolve()),
+    }));
+    const mockQueryWithProvider = jest.fn(() => Promise.resolve('ok'));
+    jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
+      queryWithProvider: mockQueryWithProvider,
+      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      listProviders: jest.fn(() => []),
+    }));
 
     const { createAppState: createState } = require('../../../src/tui/app-state');
     appState = createState();
     await appState.processInput('ai');
     await appState.processInput('hello');
 
-    const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const callArgs = mockQueryWithProvider.mock.calls[0];
+    const messages = callArgs[2].messages;
     // No system message when knowledge is null
-    expect(callBody.messages.length).toBe(1);
-    expect(callBody.messages[0].role).toBe('user');
+    expect(messages.length).toBe(1);
+    expect(messages[0].role).toBe('user');
   });
 });

@@ -14,12 +14,19 @@ function createApp(ink) {
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
     const [showSetup, setShowSetup] = React.useState(false);
+    const [spinnerFrame, setSpinnerFrame] = React.useState(0);
     const { exit } = useApp();
 
     const rerender = () => {
       setMessages([...stateRef.current.messages]);
       setShowSetup(stateRef.current.showSetup);
     };
+
+    React.useEffect(() => {
+      if (!stateRef.current.aiLoading) return;
+      const id = setInterval(() => setSpinnerFrame(f => f + 1), 120);
+      return () => clearInterval(id);
+    });
 
     useInput(async (ch, key) => {
       // When setup screen is active, delegate input handling
@@ -84,6 +91,33 @@ function createApp(ink) {
         return;
       }
 
+      // Model token input
+      if (stateRef.current.modelStep === 'token') {
+        if (key.escape) {
+          stateRef.current.cancelModelToken();
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.return) {
+          const token = input.trim();
+          if (token) {
+            await stateRef.current.submitModelToken(token);
+          }
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.backspace || key.delete) {
+          setInput(prev => prev.slice(0, -1));
+          return;
+        }
+        if (ch && !key.ctrl && !key.meta) {
+          setInput(prev => prev + ch);
+        }
+        return;
+      }
+
       // Tab — autocomplete command
       if (key.tab) {
         if (!stateRef.current.aiMode && input.startsWith('/')) {
@@ -111,8 +145,12 @@ function createApp(ink) {
         const trimmed = input.trim();
         if (trimmed === '') return;
         stateRef.current.messages.push({ text: trimmed, type: 'user' });
-        const result = await stateRef.current.processInput(trimmed);
         setInput('');
+        // Pre-render in AI mode so the "Thinking..." indicator appears immediately
+        if (stateRef.current.aiMode) {
+          rerender();
+        }
+        const result = await stateRef.current.processInput(trimmed);
         rerender();
         if (result.shouldExit) {
           exit();
@@ -198,6 +236,12 @@ function createApp(ink) {
           return React.createElement(Text, { key: i, wrap: 'wrap', color: msg.type === 'ai-error' ? tc.error || tc.text : tc.text }, msg.text);
         }),
       ),
+      // AI responding indicator
+      stateRef.current.aiLoading && React.createElement(
+        Box,
+        { paddingX: 1 },
+        React.createElement(Text, { color: tc.accent }, `${'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[spinnerFrame % 10]} Responding...`),
+      ),
       // Connect selection list
       stateRef.current.connectStep === 'select' && React.createElement(
         Box,
@@ -225,15 +269,17 @@ function createApp(ink) {
       // Input bar — changes label based on mode
       (() => {
         const connectToken = stateRef.current.connectStep === 'token';
-        const label = aiMode ? 'AI> ' : connectToken ? 'Token: ' : '> ';
-        const labelColor = aiMode ? tc.secondary : connectToken ? tc.warning : tc.success;
-        const borderColor = aiMode ? tc.secondary : connectToken ? tc.warning : tc.muted;
+        const modelToken = stateRef.current.modelStep === 'token';
+        const masked = connectToken || modelToken;
+        const label = aiMode ? 'AI> ' : connectToken ? 'Token: ' : modelToken ? 'API Key: ' : '> ';
+        const labelColor = aiMode ? tc.secondary : (connectToken || modelToken) ? tc.warning : tc.success;
+        const borderColor = aiMode ? tc.secondary : (connectToken || modelToken) ? tc.warning : tc.muted;
         const textColor = aiMode ? tc.secondary : tc.text;
         return React.createElement(
           Box,
           { borderStyle: 'single', borderColor, paddingX: 1 },
           React.createElement(Text, { color: labelColor }, label),
-          React.createElement(Text, { color: textColor }, connectToken ? '*'.repeat(input.length) : input),
+          React.createElement(Text, { color: textColor }, masked ? '*'.repeat(input.length) : input),
           React.createElement(Text, { dimColor: true }, '█'),
         );
       })(),
