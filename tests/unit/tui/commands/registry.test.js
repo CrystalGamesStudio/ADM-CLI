@@ -36,7 +36,8 @@ describe('Command Registry — dispatch', () => {
     expect(result.output).toMatch(/exit/);
     expect(result.output).toMatch(/clear/);
     expect(result.output).toMatch(/theme/);
-    expect(result.output).toMatch(/status/);
+    expect(result.output).toMatch(/github/);
+    expect(result.output).not.toMatch(/status\s+Show git status/);
   });
 
   test('/exit signals the shell should stop', async () => {
@@ -92,7 +93,7 @@ describe('Command Registry — autocomplete', () => {
     expect(matches).toContain('exit');
     expect(matches).toContain('clear');
     expect(matches).toContain('theme');
-    expect(matches).toContain('status');
+    expect(matches).toContain('github');
   });
 
   test('partial "he" matches help', () => {
@@ -100,11 +101,10 @@ describe('Command Registry — autocomplete', () => {
     expect(matches).toEqual(['help']);
   });
 
-  test('partial "c" matches clear, connect, and commit', () => {
+  test('partial "c" matches clear and connect', () => {
     const matches = registry.autocomplete('c');
     expect(matches).toContain('clear');
     expect(matches).toContain('connect');
-    expect(matches).toContain('commit');
   });
 
   test('no match returns empty array', () => {

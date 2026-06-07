@@ -91,6 +91,32 @@ function createApp(ink) {
         return;
       }
 
+      // GitHub hub — action selection
+      if (stateRef.current.githubStep === 'select') {
+        if (key.upArrow) {
+          stateRef.current.moveGithubCursor(-1);
+          rerender();
+          return;
+        }
+        if (key.downArrow) {
+          stateRef.current.moveGithubCursor(1);
+          rerender();
+          return;
+        }
+        if (key.return) {
+          await stateRef.current.selectGithubItem();
+          setInput('');
+          rerender();
+          return;
+        }
+        if (key.escape) {
+          stateRef.current.cancelGithub();
+          rerender();
+          return;
+        }
+        return;
+      }
+
       // Model token input
       if (stateRef.current.modelStep === 'token') {
         if (key.escape) {
@@ -260,6 +286,20 @@ function createApp(ink) {
         ),
         React.createElement(Text, { dimColor: true, color: tc.muted }, '  ↑↓ select · Enter confirm · ESC cancel'),
       ),
+      // GitHub hub selection list
+      stateRef.current.githubStep === 'select' && React.createElement(
+        Box,
+        { flexDirection: 'column', paddingX: 1 },
+        ...['Status', 'PRs', 'Issues', 'Commits'].map((label, i) =>
+          React.createElement(
+            Box,
+            { key: i },
+            React.createElement(Text, { color: stateRef.current.githubCursor === i ? tc.accent : tc.muted },
+              stateRef.current.githubCursor === i ? `  ● ${label}` : `  ○ ${label}`),
+          )
+        ),
+        React.createElement(Text, { dimColor: true, color: tc.muted }, '  ↑↓ select · Enter confirm · ESC cancel'),
+      ),
       // Suggestions
       suggestions.length > 0 && React.createElement(
         Box,
@@ -275,12 +315,14 @@ function createApp(ink) {
         const labelColor = aiMode ? tc.secondary : (connectToken || modelToken) ? tc.warning : tc.success;
         const borderColor = aiMode ? tc.secondary : (connectToken || modelToken) ? tc.warning : tc.muted;
         const textColor = aiMode ? tc.secondary : tc.text;
+        const placeholder = (!masked && !aiMode) ? stateRef.current.getPlaceholder(input) : null;
         return React.createElement(
           Box,
           { borderStyle: 'single', borderColor, paddingX: 1 },
           React.createElement(Text, { color: labelColor }, label),
           React.createElement(Text, { color: textColor }, masked ? '*'.repeat(input.length) : input),
           React.createElement(Text, { dimColor: true }, '█'),
+          placeholder && React.createElement(Text, { dimColor: true, color: tc.muted }, placeholder),
         );
       })(),
     );

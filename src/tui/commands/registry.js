@@ -8,16 +8,13 @@ const BUILTIN_COMMANDS = [
   { name: 'exit', description: 'Exit ADM' },
   { name: 'clear', description: 'Clear message history' },
   { name: 'theme', description: 'List or switch themes' },
-  { name: 'status', description: 'Show git status' },
+  { name: 'github', description: 'GitHub operations: status, pr, issue, commit', subcommands: ['status', 'pr', 'issue', 'commit'] },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
-  { name: 'model', description: 'Show or switch AI provider' },
+  { name: 'model', description: 'Show or switch AI provider', subcommands: ['<provider-id>'] },
   { name: 'setup', description: 'Launch extension setup wizard' },
-  { name: 'connect', description: 'Connect to GitHub or GitLab' },
-  { name: 'pr', description: 'Pull request operations' },
-  { name: 'mr', description: 'Merge request operations (GitLab)' },
-  { name: 'issue', description: 'List issues from connected platform' },
-  { name: 'commit', description: 'Commit subcommands: suggest' },
-  { name: 'dotfiles', description: 'Sync dotfiles from repo' },
+  { name: 'connect', description: 'Connect to GitHub or GitLab', subcommands: ['github', 'gitlab', 'list', 'disconnect'] },
+  { name: 'mr', description: 'Merge request operations (GitLab)', subcommands: ['list', 'draft', 'comment'] },
+  { name: 'dotfiles', description: 'Sync dotfiles from repo', subcommands: ['sync'] },
   { name: 'uninstall', description: 'Remove ADM CLI config' },
 ];
 
@@ -40,6 +37,14 @@ function createRegistry(context = {}) {
 
     const cmd = commands.get(cmdName);
     if (!cmd) {
+      // Redirect old commands to /github
+      if (['status', 'pr', 'issue', 'commit'].includes(cmdName)) {
+        return {
+          output: chalk.yellow(`/${cmdName} has moved. Use /github ${cmdName} instead.`),
+          shouldExit: false,
+          shouldClear: false,
+        };
+      }
       // Try plugin fallback before reporting unknown command
       const pluginResult = await dispatchPlugin(cmdName, args, context);
       if (pluginResult) return pluginResult;
@@ -67,8 +72,8 @@ function createRegistry(context = {}) {
     if (cmdName === 'theme') {
       return await dispatchTheme(args, context);
     }
-    if (cmdName === 'status') {
-      return dispatchStatus(context);
+    if (cmdName === 'github') {
+      return await dispatchGithub(args, context);
     }
     if (cmdName === 'ai') {
       return dispatchAi(args, context);
@@ -82,17 +87,8 @@ function createRegistry(context = {}) {
     if (cmdName === 'connect') {
       return await dispatchConnect(args, context);
     }
-    if (cmdName === 'pr') {
-      return await dispatchPr(args, context);
-    }
     if (cmdName === 'mr') {
       return await dispatchMr(args, context);
-    }
-    if (cmdName === 'issue') {
-      return await dispatchIssue(args, context);
-    }
-    if (cmdName === 'commit') {
-      return await dispatchCommit(args, context);
     }
     if (cmdName === 'dotfiles') {
       return await dispatchDotfiles(args, context);
@@ -110,7 +106,12 @@ function createRegistry(context = {}) {
     return [...commands.keys()].filter(name => name.startsWith(p));
   }
 
-  return { dispatch, autocomplete, commands };
+  function getSubcommands(cmdName) {
+    const cmd = commands.get(cmdName);
+    return cmd ? cmd.subcommands : undefined;
+  }
+
+  return { dispatch, autocomplete, commands, getSubcommands };
 }
 
 function dispatchHelp(commands) {
@@ -182,7 +183,16 @@ function dispatchStatus(context) {
   }
 }
 
-module.exports = { createRegistry };
+function getPlaceholderText(input, getSubcommandsFn) {
+  if (!input || !input.startsWith('/')) return null;
+  const match = input.match(/^\/(\w+) $/);
+  if (!match) return null;
+  const subs = getSubcommandsFn(match[1]);
+  if (!subs) return null;
+  return `<${subs.join(', ')}>`;
+}
+
+module.exports = { createRegistry, getPlaceholderText };
 
 async function dispatchAi(args, context) {
   if (!args) {
@@ -309,6 +319,42 @@ function dispatchSetup(args) {
     shouldClear: false,
     dryRun: isDryRun,
   };
+}
+
+// ─── /github ───────────────────────────────────────────────
+async function dispatchGithub(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return {
+      output: null,
+      shouldExit: false,
+      shouldClear: false,
+      shouldStartGithub: true,
+    };
+  }
+
+  if (subcommand === 'status') {
+    return dispatchStatus(context);
+  }
+
+  if (subcommand === 'pr') {
+    const prArgs = parts.slice(1).join(' ');
+    return await dispatchPr(prArgs || 'list', context);
+  }
+
+  if (subcommand === 'issue') {
+    const issueArgs = parts.slice(1).join(' ');
+    return await dispatchIssue(issueArgs || 'list', context);
+  }
+
+  if (subcommand === 'commit') {
+    const commitArgs = parts.slice(1).join(' ');
+    return await dispatchCommit(commitArgs, context);
+  }
+
+  return { output: chalk.yellow(`Usage: /github <status|pr|issue|commit>`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /connect ──────────────────────────────────────────────

@@ -1,4 +1,4 @@
-const { createRegistry } = require('./commands/registry');
+const { createRegistry, getPlaceholderText } = require('./commands/registry');
 const { resolveTheme } = require('../ui/theme');
 const { readConfig, writeConfig } = require('../config');
 const ai = require('../integrations/ai-backend');
@@ -27,6 +27,8 @@ function createAppState() {
     modelStep: null,
     modelProvider: null,
     aiLoading: false,
+    githubStep: null,
+    githubCursor: 0,
   };
 
   let knowledge = null;
@@ -111,6 +113,11 @@ function createAppState() {
       return result;
     }
 
+    if (result.shouldStartGithub) {
+      startGithub();
+      return result;
+    }
+
     if (result.shouldPromptModelToken) {
       state.modelStep = 'token';
       state.modelProvider = result.modelProvider;
@@ -180,6 +187,31 @@ function createAppState() {
     state.connectPlatform = null;
   }
 
+  const GITHUB_OPTIONS = 4;
+
+  function startGithub() {
+    state.githubStep = 'select';
+    state.githubCursor = 0;
+    state.messages.push({ text: 'Select an action:', type: 'system' });
+  }
+
+  function moveGithubCursor(direction) {
+    state.githubCursor = (state.githubCursor + direction + GITHUB_OPTIONS) % GITHUB_OPTIONS;
+  }
+
+  async function selectGithubItem() {
+    const idx = state.githubCursor;
+    state.githubStep = null;
+
+    const subcommands = ['status', 'pr list', 'issue list', 'commit suggest'];
+    await processInput(`github ${subcommands[idx]}`);
+  }
+
+  function cancelGithub() {
+    state.messages.push({ text: 'Cancelled.', type: 'system' });
+    state.githubStep = null;
+  }
+
   async function submitModelToken(token) {
     const provider = state.modelProvider;
     const { getProvider } = require('../integrations/ai-providers/registry');
@@ -218,6 +250,10 @@ function createAppState() {
     return registry.autocomplete(stripped);
   }
 
+  function getPlaceholder(input) {
+    return getPlaceholderText(input, registry.getSubcommands);
+  }
+
   return {
     get messages() { return state.messages; },
     theme,
@@ -237,6 +273,11 @@ function createAppState() {
     selectConnectPlatform,
     submitConnectToken,
     cancelConnect,
+    get githubStep() { return state.githubStep; },
+    get githubCursor() { return state.githubCursor; },
+    moveGithubCursor,
+    selectGithubItem,
+    cancelGithub,
     submitModelToken,
     cancelModelToken,
     get modelStep() { return state.modelStep; },
@@ -245,6 +286,7 @@ function createAppState() {
     markSetupDone,
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,
+    getPlaceholder,
   };
 }
 

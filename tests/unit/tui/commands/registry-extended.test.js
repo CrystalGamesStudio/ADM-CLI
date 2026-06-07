@@ -118,8 +118,8 @@ describe('/connect command in TUI', () => {
   });
 });
 
-// ─── /pr ───────────────────────────────────────────────────
-describe('/pr command in TUI', () => {
+// ─── /pr (via /github) ─────────────────────────────────────
+describe('/pr command redirects to /github', () => {
   let registry;
 
   beforeEach(() => {
@@ -127,13 +127,19 @@ describe('/pr command in TUI', () => {
     jest.clearAllMocks();
   });
 
-  test('/pr list shows formatted PRs', async () => {
+  test('/pr returns redirect to /github pr', async () => {
+    const result = await registry.dispatch('/pr');
+    expect(result.output).toMatch(/moved/);
+    expect(result.output).toMatch(/\/github pr/);
+  });
+
+  test('/github pr list shows formatted PRs', async () => {
     github.listPRs.mockResolvedValue([
       { number: 42, title: 'Fix login bug', repo: 'adm', state: 'open', url: 'https://github.com/x/adm/pull/42' },
       { number: 43, title: 'Add feature', repo: 'adm', state: 'open', url: 'https://github.com/x/adm/pull/43' },
     ]);
 
-    const result = await registry.dispatch('/pr list');
+    const result = await registry.dispatch('/github pr list');
 
     expect(result.output).toMatch(/#42/);
     expect(result.output).toMatch(/Fix login bug/);
@@ -141,48 +147,52 @@ describe('/pr command in TUI', () => {
     expect(result.output).toMatch(/Add feature/);
   });
 
-  test('/pr list with no PRs shows message', async () => {
+  test('/github pr list with no PRs shows message', async () => {
     github.listPRs.mockResolvedValue([]);
 
-    const result = await registry.dispatch('/pr list');
+    const result = await registry.dispatch('/github pr list');
 
     expect(result.output).toMatch(/no open pull requests/i);
   });
 
-  test('/pr draft <title> creates draft PR', async () => {
+  test('/github pr draft <title> creates draft PR', async () => {
     github.createDraftPR.mockResolvedValue({ number: 99, url: 'https://github.com/x/adm/pull/99' });
 
-    const result = await registry.dispatch('/pr draft my new feature');
+    const result = await registry.dispatch('/github pr draft my new feature');
 
     expect(result.output).toMatch(/#99/);
     expect(github.createDraftPR).toHaveBeenCalledWith('my new feature');
   });
 
-  test('/pr draft without title shows usage', async () => {
-    const result = await registry.dispatch('/pr draft');
+  test('/github pr draft without title shows usage', async () => {
+    const result = await registry.dispatch('/github pr draft');
 
     expect(result.output).toMatch(/usage/i);
   });
 
-  test('/pr comment <id> <msg> comments on PR', async () => {
+  test('/github pr comment <id> <msg> comments on PR', async () => {
     github.commentOnPR.mockResolvedValue({ url: 'https://github.com/x/adm/pull/1#comment' });
 
-    const result = await registry.dispatch('/pr comment 42 looks good');
+    const result = await registry.dispatch('/github pr comment 42 looks good');
 
     expect(result.output).toMatch(/#42/);
     expect(github.commentOnPR).toHaveBeenCalledWith('42', 'looks good');
   });
 
-  test('/pr without subcommand shows usage', async () => {
-    const result = await registry.dispatch('/pr');
+  test('/github pr (no subcommand) defaults to listing PRs', async () => {
+    github.listPRs.mockResolvedValue([
+      { number: 7, title: 'Feature', repo: 'adm', state: 'open', url: 'https://github.com/x/adm/pull/7' },
+    ]);
 
-    expect(result.output).toMatch(/usage/i);
+    const result = await registry.dispatch('/github pr');
+
+    expect(result.output).toMatch(/#7/);
   });
 
-  test('/pr list failure returns error', async () => {
+  test('/github pr list failure returns error', async () => {
     github.listPRs.mockRejectedValue(new Error('API rate limit'));
 
-    const result = await registry.dispatch('/pr list');
+    const result = await registry.dispatch('/github pr list');
 
     expect(result.output).toMatch(/API rate limit/);
   });
@@ -241,8 +251,8 @@ describe('/mr command in TUI', () => {
   });
 });
 
-// ─── /issue ────────────────────────────────────────────────
-describe('/issue command in TUI', () => {
+// ─── /issue (via /github) ──────────────────────────────────
+describe('/issue command redirects to /github', () => {
   let registry;
 
   beforeEach(() => {
@@ -250,7 +260,13 @@ describe('/issue command in TUI', () => {
     jest.clearAllMocks();
   });
 
-  test('/issue list shows formatted issues from GitHub', async () => {
+  test('/issue returns redirect to /github issue', async () => {
+    const result = await registry.dispatch('/issue');
+    expect(result.output).toMatch(/moved/);
+    expect(result.output).toMatch(/\/github issue/);
+  });
+
+  test('/github issue list shows formatted issues from GitHub', async () => {
     listStoredServices.mockResolvedValue(['github']);
     github.getClient.mockResolvedValue({
       users: { getAuthenticated: jest.fn().mockResolvedValue({ data: { login: 'user' } }) },
@@ -263,32 +279,32 @@ describe('/issue command in TUI', () => {
       },
     });
 
-    const result = await registry.dispatch('/issue list');
+    const result = await registry.dispatch('/github issue list');
 
     expect(result.output).toMatch(/#10/);
     expect(result.output).toMatch(/Bug report/);
   });
 
-  test('/issue list with no connected platforms shows message', async () => {
+  test('/github issue list with no connected platforms shows message', async () => {
     listStoredServices.mockResolvedValue([]);
 
-    const result = await registry.dispatch('/issue list');
+    const result = await registry.dispatch('/github issue list');
 
     expect(result.output).toMatch(/no connected platforms/i);
   });
 
-  test('/issue list with no issues shows message', async () => {
+  test('/github issue list with no issues shows message', async () => {
     listStoredServices.mockResolvedValue(['gitlab']);
     gitlab.listIssues.mockResolvedValue([]);
 
-    const result = await registry.dispatch('/issue list');
+    const result = await registry.dispatch('/github issue list');
 
     expect(result.output).toMatch(/no issues found/i);
   });
 });
 
-// ─── /commit ───────────────────────────────────────────────
-describe('/commit command in TUI', () => {
+// ─── /commit (via /github) ─────────────────────────────────
+describe('/commit command redirects to /github', () => {
   let registry;
 
   beforeEach(() => {
@@ -296,29 +312,35 @@ describe('/commit command in TUI', () => {
     jest.clearAllMocks();
   });
 
-  test('/commit suggest returns AI suggestion', async () => {
+  test('/commit returns redirect to /github commit', async () => {
+    const result = await registry.dispatch('/commit');
+    expect(result.output).toMatch(/moved/);
+    expect(result.output).toMatch(/\/github commit/);
+  });
+
+  test('/github commit suggest returns AI suggestion', async () => {
     const mockExec = jest.fn(() => 'diff --git a/file.js ...');
     const mockAi = { query: jest.fn().mockResolvedValue('feat: add new login flow') };
     registry = createRegistry({ execSync: mockExec, ai: mockAi });
 
-    const result = await registry.dispatch('/commit suggest');
+    const result = await registry.dispatch('/github commit suggest');
 
     expect(result.output).toMatch(/suggested commit message/i);
     expect(result.output).toMatch(/feat: add new login flow/);
     expect(mockAi.query).toHaveBeenCalled();
   });
 
-  test('/commit suggest with no staged changes shows message', async () => {
+  test('/github commit suggest with no staged changes shows message', async () => {
     const mockExec = jest.fn(() => '');
     registry = createRegistry({ execSync: mockExec });
 
-    const result = await registry.dispatch('/commit suggest');
+    const result = await registry.dispatch('/github commit suggest');
 
     expect(result.output).toMatch(/no staged changes/i);
   });
 
-  test('/commit without subcommand shows usage', async () => {
-    const result = await registry.dispatch('/commit');
+  test('/github commit without subcommand shows usage', async () => {
+    const result = await registry.dispatch('/github commit');
 
     expect(result.output).toMatch(/usage/i);
   });
@@ -436,7 +458,7 @@ describe('/help shows all migrated commands', () => {
   });
 
   const expectedCommands = [
-    'connect', 'pr', 'mr', 'issue', 'commit',
+    'connect', 'github', 'mr',
     'dotfiles', 'uninstall',
   ];
 
