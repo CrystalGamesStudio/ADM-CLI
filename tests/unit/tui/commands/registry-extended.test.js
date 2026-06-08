@@ -400,21 +400,31 @@ describe('/uninstall command in TUI', () => {
     jest.clearAllMocks();
   });
 
-  test('/uninstall removes config and returns exit', async () => {
+  test('/uninstall returns confirmation prompt', async () => {
+    const result = await registry.dispatch('/uninstall');
+
+    expect(result.needsConfirm).toBe(true);
+    expect(result.output).toMatch(/remove/i);
+    expect(result.shouldExit).toBe(false);
+  });
+
+  test('/uninstall onConfirm runs uninstall and returns exit', async () => {
     uninstall.mockResolvedValue(true);
 
     const result = await registry.dispatch('/uninstall');
+    const confirmResult = await result.onConfirm();
 
-    expect(result.output).toMatch(/uninstalled/i);
-    expect(result.shouldExit).toBe(true);
+    expect(confirmResult.shouldExit).toBe(true);
+    expect(confirmResult.output).toMatch(/uninstalled/i);
   });
 
-  test('/uninstall failure shows error', async () => {
+  test('/uninstall onConfirm failure shows error', async () => {
     uninstall.mockRejectedValue(new Error('Permission denied'));
 
     const result = await registry.dispatch('/uninstall');
+    const confirmResult = await result.onConfirm();
 
-    expect(result.output).toMatch(/permission denied/i);
+    expect(confirmResult.output).toMatch(/permission denied/i);
   });
 });
 

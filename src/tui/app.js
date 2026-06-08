@@ -1,4 +1,5 @@
 const React = require('react');
+const { spawn } = require('child_process');
 const { createAppState } = require('./app-state');
 const { createSetupScreen } = require('./components/SetupScreen');
 const { resolveTheme } = require('../ui/theme');
@@ -23,8 +24,8 @@ function createApp(ink) {
     };
 
     React.useEffect(() => {
-      if (!stateRef.current.aiLoading) return;
-      const id = setInterval(() => setSpinnerFrame(f => f + 1), 120);
+      if (!stateRef.current.aiLoading && !stateRef.current.upgradeLoading) return;
+      const id = setInterval(() => setSpinnerFrame(f => f + 1), 50);
       return () => clearInterval(id);
     });
 
@@ -144,6 +145,26 @@ function createApp(ink) {
         return;
       }
 
+      // Confirmation prompt — y/N
+      if (stateRef.current.confirmStep) {
+        if (ch === 'y' || ch === 'Y') {
+          const result = await stateRef.current.confirmAction();
+          rerender();
+          if (result.shouldExit) {
+            exit();
+          }
+          if (result.shouldRestart) {
+            spawn('adm', [], { detached: true, stdio: 'ignore' }).unref();
+            exit();
+          }
+          return;
+        }
+        // Any other key (including n, Enter, Esc) cancels
+        stateRef.current.confirmCancel();
+        rerender();
+        return;
+      }
+
       // Tab — autocomplete command
       if (key.tab) {
         if (!stateRef.current.aiMode && input.startsWith('/')) {
@@ -172,8 +193,8 @@ function createApp(ink) {
         if (trimmed === '') return;
         stateRef.current.messages.push({ text: trimmed, type: 'user' });
         setInput('');
-        // Pre-render in AI mode so the "Thinking..." indicator appears immediately
-        if (stateRef.current.aiMode) {
+        // Pre-render so loading spinners appear immediately
+        if (stateRef.current.aiMode || trimmed === 'upgrade' || trimmed === '/upgrade') {
           rerender();
         }
         const result = await stateRef.current.processInput(trimmed);
@@ -196,6 +217,7 @@ function createApp(ink) {
 
     const bar = stateRef.current.getStatusBar();
     const aiMode = bar.aiMode;
+    const providerLabel = bar.activeProvider ? ` (${bar.activeProvider})` : '';
     const suggestions = !aiMode && input.startsWith('/') ? stateRef.current.getSuggestions(input) : [];
 
     // Resolve theme colors from current theme name
@@ -243,7 +265,7 @@ function createApp(ink) {
         { borderStyle: 'single', borderColor: tc.muted, paddingX: 1 },
         React.createElement(Text, { color: tc.primary }, bar.themeName),
         React.createElement(Text, { color: tc.muted }, ' │ '),
-        React.createElement(Text, { color: aiMode ? tc.success : tc.muted }, `AI: ${aiMode ? 'ON' : 'off'}`),
+        React.createElement(Text, { color: aiMode ? tc.success : tc.muted }, `AI: ${aiMode ? 'ON' : 'off'}${providerLabel}`),
         React.createElement(Text, { color: tc.muted }, ' │ '),
         React.createElement(Text, { color: tc.warning }, `ADM ${bar.version}`),
       ),
@@ -266,7 +288,7 @@ function createApp(ink) {
       stateRef.current.aiLoading && React.createElement(
         Box,
         { paddingX: 1 },
-        React.createElement(Text, { color: tc.accent }, `${'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[spinnerFrame % 10]} Responding...`),
+        React.createElement(Text, { color: tc.accent }, `${'◢◣◤◥'[spinnerFrame % 4]} Responding...`),
       ),
       // Connect selection list
       stateRef.current.connectStep === 'select' && React.createElement(
@@ -300,14 +322,27 @@ function createApp(ink) {
         ),
         React.createElement(Text, { dimColor: true, color: tc.muted }, '  ↑↓ select · Enter confirm · ESC cancel'),
       ),
+      // Upgrade loading spinner
+      stateRef.current.upgradeLoading && React.createElement(
+        Box,
+        { paddingX: 1 },
+        React.createElement(Text, { color: tc.accent }, `${'◢◣◤◥'[spinnerFrame % 4]} Checking for updates...`),
+      ),
+      // Confirmation prompt
+      stateRef.current.confirmStep && React.createElement(
+        Box,
+        { paddingX: 1 },
+        React.createElement(Text, { color: tc.warning }, `${stateRef.current.confirmStep.message} [y/N] `),
+        React.createElement(Text, { dimColor: true }, '█'),
+      ),
       // Suggestions
       suggestions.length > 0 && React.createElement(
         Box,
         { paddingX: 1 },
         React.createElement(Text, { dimColor: true, color: tc.accent }, suggestions.map(s => `/${s}`).join('  ')),
       ),
-      // Input bar — changes label based on mode
-      (() => {
+      // Input bar — hidden during confirmation prompt
+      !stateRef.current.confirmStep && (() => {
         const connectToken = stateRef.current.connectStep === 'token';
         const modelToken = stateRef.current.modelStep === 'token';
         const masked = connectToken || modelToken;

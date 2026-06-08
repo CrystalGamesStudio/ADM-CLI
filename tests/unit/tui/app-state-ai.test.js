@@ -67,12 +67,12 @@ describe('AI mode — queries', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.doMock('../../../src/config', () => ({
-      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm', 'ai.glmKey': 'test-key' })),
       writeConfig: jest.fn(() => Promise.resolve()),
     }));
     jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
       queryWithProvider: jest.fn(() => Promise.resolve('Git is a version control system.')),
-      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      getProvider: jest.fn(() => ({ id: 'glm', name: 'GLM', requiresAuth: false })),
       listProviders: jest.fn(() => []),
     }));
   });
@@ -90,7 +90,7 @@ describe('AI mode — queries', () => {
     await appState.processInput('what is git?');
 
     expect(queryWithProvider).toHaveBeenCalledWith(
-      'glm-free',
+      'glm',
       'what is git?',
       expect.objectContaining({ apiKey: 'test-key', messages: expect.any(Array) }),
     );
@@ -139,12 +139,12 @@ describe('AI mode — queries', () => {
   test('AI query failure shows friendly error in messages', async () => {
     jest.resetModules();
     jest.doMock('../../../src/config', () => ({
-      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm', 'ai.glmKey': 'test-key' })),
       writeConfig: jest.fn(() => Promise.resolve()),
     }));
     jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
       queryWithProvider: jest.fn(() => Promise.reject(new Error('Network timeout'))),
-      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      getProvider: jest.fn(() => ({ id: 'glm', name: 'GLM', requiresAuth: false })),
       listProviders: jest.fn(() => []),
     }));
 
@@ -162,12 +162,12 @@ describe('AI mode — queries', () => {
   test('AI query failure does not exit AI mode', async () => {
     jest.resetModules();
     jest.doMock('../../../src/config', () => ({
-      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm', 'ai.glmKey': 'test-key' })),
       writeConfig: jest.fn(() => Promise.resolve()),
     }));
     jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
       queryWithProvider: jest.fn(() => Promise.reject(new Error('Network timeout'))),
-      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      getProvider: jest.fn(() => ({ id: 'glm', name: 'GLM', requiresAuth: false })),
       listProviders: jest.fn(() => []),
     }));
 
@@ -196,13 +196,13 @@ describe('AI mode — knowledge injection', () => {
       getKnowledge: jest.fn().mockReturnValue('ADM is a developer CLI tool.'),
     }));
     jest.doMock('../../../src/config', () => ({
-      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm', 'ai.glmKey': 'test-key' })),
       writeConfig: jest.fn(() => Promise.resolve()),
     }));
     const mockQueryWithProvider = jest.fn(() => Promise.resolve('ADM helps devs.'));
     jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
       queryWithProvider: mockQueryWithProvider,
-      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      getProvider: jest.fn(() => ({ id: 'glm', name: 'GLM', requiresAuth: false })),
       listProviders: jest.fn(() => []),
     }));
 
@@ -224,13 +224,13 @@ describe('AI mode — knowledge injection', () => {
       getKnowledge: jest.fn().mockReturnValue(null),
     }));
     jest.doMock('../../../src/config', () => ({
-      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' })),
+      readConfig: jest.fn(() => Promise.resolve({ aiProvider: 'glm', 'ai.glmKey': 'test-key' })),
       writeConfig: jest.fn(() => Promise.resolve()),
     }));
     const mockQueryWithProvider = jest.fn(() => Promise.resolve('ok'));
     jest.doMock('../../../src/integrations/ai-providers/registry', () => ({
       queryWithProvider: mockQueryWithProvider,
-      getProvider: jest.fn(() => ({ id: 'glm-free', name: 'GLM Free', requiresAuth: false })),
+      getProvider: jest.fn(() => ({ id: 'glm', name: 'GLM', requiresAuth: false })),
       listProviders: jest.fn(() => []),
     }));
 

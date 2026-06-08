@@ -1,6 +1,5 @@
 const PROVIDERS = [
-  { id: 'glm-free', name: 'GLM Free', requiresAuth: false },
-  { id: 'glm-pro', name: 'GLM Pro', requiresAuth: true },
+  { id: 'glm', name: 'GLM', requiresAuth: true },
   { id: 'openai', name: 'OpenAI', requiresAuth: true },
   { id: 'anthropic', name: 'Anthropic Claude', requiresAuth: true },
   { id: 'ollama', name: 'Ollama (local)', requiresAuth: false },
@@ -30,7 +29,7 @@ function getProvider(id) {
 
 async function queryGlmFree(prompt, options = {}) {
   const apiKey = options.apiKey || process.env.GLM_API_KEY;
-  if (!apiKey) throw new Error('GLM Free requires GLM_API_KEY or default key.');
+  if (!apiKey) throw new Error('GLM requires GLM_API_KEY. Set it with /model glm.');
 
   const messages = options.messages || [{ role: 'user', content: prompt }];
   const body = {
@@ -224,8 +223,7 @@ async function queryOllama(prompt, options = {}) {
 }
 
 const QUERY_MAP = {
-  'glm-free': queryGlmFree,
-  'glm-pro': queryGlmFree,
+  'glm': queryGlmFree,
   'openai': queryOpenai,
   'anthropic': queryAnthropic,
   'ollama': queryOllama,

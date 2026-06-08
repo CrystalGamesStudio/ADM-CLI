@@ -8,8 +8,7 @@ describe('Provider registry', () => {
 
   test('includes all required provider ids', () => {
     const ids = listProviders().map(p => p.id);
-    expect(ids).toContain('glm-free');
-    expect(ids).toContain('glm-pro');
+    expect(ids).toContain('glm');
     expect(ids).toContain('openai');
     expect(ids).toContain('anthropic');
     expect(ids).toContain('ollama');
@@ -27,7 +26,7 @@ describe('Provider registry', () => {
   });
 });
 
-describe('GLM Free provider', () => {
+describe('GLM provider', () => {
   let originalFetch;
 
   beforeEach(() => {
@@ -48,7 +47,7 @@ describe('GLM Free provider', () => {
       }),
     });
 
-    const result = await queryWithProvider('glm-free', 'hello');
+    const result = await queryWithProvider('glm', 'hello');
     expect(result).toBe('Hello from GLM!');
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('open.bigmodel.cn'),
@@ -348,7 +347,7 @@ describe('Qwen provider', () => {
   });
 });
 
-describe('Fallback to GLM Free', () => {
+describe('Fallback to GLM', () => {
   let originalFetch;
 
   beforeEach(() => {
@@ -361,7 +360,7 @@ describe('Fallback to GLM Free', () => {
     delete process.env.GLM_API_KEY;
   });
 
-  test('when OpenAI fails, falls back to GLM Free', async () => {
+  test('when OpenAI fails, falls back to GLM', async () => {
     const callCount = { n: 0 };
     global.fetch = jest.fn().mockImplementation((url) => {
       callCount.n++;
@@ -376,7 +375,7 @@ describe('Fallback to GLM Free', () => {
       });
     });
 
-    const result = await queryWithProvider('openai', 'hello', { apiKey: 'sk-test', fallback: 'glm-free' });
+    const result = await queryWithProvider('openai', 'hello', { apiKey: 'sk-test', fallback: 'glm' });
     expect(result).toBe('GLM fallback response');
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(global.fetch.mock.calls[1][0]).toContain('open.bigmodel.cn');

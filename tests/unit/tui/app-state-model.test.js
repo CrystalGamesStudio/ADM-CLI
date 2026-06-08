@@ -48,10 +48,10 @@ describe('app-state — model token flow', () => {
   });
 
   test('submitModelToken saves key to config and activates provider', async () => {
-    readConfig.mockResolvedValue({ aiProvider: 'glm-free' });
+    readConfig.mockResolvedValue({ aiProvider: 'glm' });
     await appState.processInput('/model groq');
 
-    readConfig.mockResolvedValue({ aiProvider: 'glm-free' });
+    readConfig.mockResolvedValue({ aiProvider: 'glm' });
     await appState.submitModelToken('my-secret-key');
 
     const savedConfig = writeConfig.mock.calls[writeConfig.mock.calls.length - 1][0];

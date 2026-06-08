@@ -37,12 +37,12 @@ describe('/ai command — registry dispatch', () => {
   });
 
   test('/ai with question sends one-off query via active provider', async () => {
-    readConfig.mockResolvedValue({ aiProvider: 'glm-free', 'ai.glm-freeKey': 'test-key' });
+    readConfig.mockResolvedValue({ aiProvider: 'glm', 'ai.glmKey': 'test-key' });
 
     const result = await registry.dispatch('ai how to handle async?');
 
     expect(queryWithProvider).toHaveBeenCalledWith(
-      'glm-free',
+      'glm',
       'how to handle async?',
       expect.objectContaining({ apiKey: 'test-key' }),
     );

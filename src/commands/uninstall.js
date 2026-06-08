@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
+const { spawn } = require('child_process');
 const chalk = require('chalk');
 
 async function uninstall() {
@@ -15,6 +16,30 @@ async function uninstall() {
   } catch (err) {
     if (err.code !== 'ENOENT') {
       console.log(chalk.red(`  Failed to remove config: ${err.message}`));
+    }
+  }
+
+  // Uninstall npm package
+  await new Promise((resolve) => {
+    const child = spawn('npm', ['uninstall', '-g', '@crystalgames/adm'], { stdio: 'pipe' });
+    child.on('close', (code) => {
+      if (code === 0) {
+        console.log(chalk.green('  Removed npm package: @crystalgames/adm'));
+      } else {
+        console.log(chalk.yellow('  npm uninstall failed — package may have been installed differently'));
+      }
+      resolve();
+    });
+  });
+
+  // Remove binary (curl-installed)
+  const binaryPath = '/usr/local/bin/adm';
+  try {
+    await fs.rm(binaryPath, { force: true });
+    console.log(chalk.green(`  Removed binary: ${binaryPath}`));
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.log(chalk.yellow(`  Could not remove binary: ${err.message}`));
     }
   }
 
@@ -40,8 +65,7 @@ async function uninstall() {
     } catch { /* skip missing rc files */ }
   }
 
-  console.log(chalk.green('\n  ADM CLI uninstalled. Remove the binary manually if needed:'));
-  console.log(chalk.gray('    rm -f /usr/local/bin/adm'));
+  console.log(chalk.green('\n  ADM CLI fully uninstalled.'));
   return true;
 }
 

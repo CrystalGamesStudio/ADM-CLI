@@ -16,6 +16,7 @@ const BUILTIN_COMMANDS = [
   { name: 'mr', description: 'Merge request operations (GitLab)', subcommands: ['list', 'draft', 'comment'] },
   { name: 'dotfiles', description: 'Sync dotfiles from repo', subcommands: ['sync'] },
   { name: 'uninstall', description: 'Remove ADM CLI config' },
+  { name: 'upgrade', description: 'Check for and install updates' },
 ];
 
 function createRegistry(context = {}) {
@@ -95,6 +96,9 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'uninstall') {
       return await dispatchUninstall(context);
+    }
+    if (cmdName === 'upgrade') {
+      return await dispatchUpgrade(context);
     }
 
     return { output: `/${cmdName} not yet implemented`, shouldExit: false, shouldClear: false };
@@ -201,7 +205,7 @@ async function dispatchAi(args, context) {
 
   try {
     const config = await readConfig();
-    const providerId = config.aiProvider || 'glm-free';
+    const providerId = config.aiProvider || 'glm';
     const apiKey = config[`ai.${providerId}Key`] || process.env.GLM_API_KEY;
 
     if (!apiKey && providerId !== 'ollama') {
@@ -211,7 +215,7 @@ async function dispatchAi(args, context) {
     const { queryWithProvider } = require('../../integrations/ai-providers/registry');
     const response = await queryWithProvider(providerId, args, { apiKey });
 
-    const prefix = providerId === 'glm-free' || providerId === 'glm-pro' ? 'GLM' : providerId;
+    const prefix = providerId === 'glm' ? 'GLM' : providerId;
     return { output: `${prefix}: ${response}`, shouldToggleAI: true, shouldExit: false, shouldClear: false };
   } catch (err) {
     return { output: chalk.red(`AI error: ${err.message}`), shouldToggleAI: true, shouldExit: false, shouldClear: false };
@@ -220,7 +224,7 @@ async function dispatchAi(args, context) {
 
 async function dispatchModel(args, context) {
   const config = await readConfig();
-  const currentProvider = config.aiProvider || 'glm-free';
+  const currentProvider = config.aiProvider || 'glm';
 
   if (!args || args === 'list') {
     if (!args) {
@@ -697,13 +701,31 @@ async function dispatchDotfiles(args, context) {
 
 // ─── /uninstall ────────────────────────────────────────────
 async function dispatchUninstall(context) {
-  try {
-    const { uninstall } = require('../../commands/uninstall');
-    await uninstall();
-    return { output: chalk.green('ADM CLI uninstalled. Remove the binary manually if needed.'), shouldExit: true, shouldClear: false };
-  } catch (err) {
-    return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
-  }
+  return {
+    output: chalk.yellow('This will remove ADM CLI and all its configuration. Continue? [y/N]'),
+    needsConfirm: true,
+    confirmMessage: 'This will remove ADM CLI and all its configuration.',
+    async onConfirm() {
+      try {
+        const { uninstall } = require('../../commands/uninstall');
+        await uninstall();
+        return { output: chalk.green('ADM CLI uninstalled.'), shouldExit: true, shouldClear: false };
+      } catch (err) {
+        return { output: chalk.red(`Uninstall failed: ${err.message}`), shouldExit: false, shouldClear: false };
+      }
+    },
+    onCancel() {
+      return { output: chalk.gray('Cancelled.'), shouldExit: false, shouldClear: false };
+    },
+    shouldExit: false,
+    shouldClear: false,
+  };
+}
+
+// ─── /upgrade ──────────────────────────────────────────────
+async function dispatchUpgrade(context) {
+  const { upgrade } = require('../../commands/upgrade');
+  return await upgrade();
 }
 
 // ─── Plugin fallback ───────────────────────────────────────

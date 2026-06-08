@@ -45,7 +45,7 @@ describe('/model interactive token flow — registry', () => {
   });
 
   test('/model groq with existing key activates immediately without prompt', async () => {
-    readConfig.mockResolvedValue({ aiProvider: 'glm-free', 'ai.groqKey': 'existing-key' });
+    readConfig.mockResolvedValue({ aiProvider: 'glm', 'ai.groqKey': 'existing-key' });
     const result = await registry.dispatch('model groq');
 
     expect(result.shouldPromptModelToken).toBeUndefined();
@@ -53,12 +53,11 @@ describe('/model interactive token flow — registry', () => {
     expect(writeConfig).toHaveBeenCalledWith(expect.objectContaining({ aiProvider: 'groq' }));
   });
 
-  test('/model glm-free activates immediately without prompt (no auth required)', async () => {
+  test('/model glm with no stored key returns shouldPromptModelToken', async () => {
     readConfig.mockResolvedValue({});
-    const result = await registry.dispatch('model glm-free');
+    const result = await registry.dispatch('model glm');
 
-    expect(result.shouldPromptModelToken).toBeUndefined();
-    expect(result.output).toMatch(/GLM Free/i);
-    expect(writeConfig).toHaveBeenCalledWith(expect.objectContaining({ aiProvider: 'glm-free' }));
+    expect(result.shouldPromptModelToken).toBe(true);
+    expect(result.modelProvider).toBe('glm');
   });
 });

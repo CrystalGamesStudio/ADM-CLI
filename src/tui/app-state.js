@@ -29,6 +29,10 @@ function createAppState() {
     aiLoading: false,
     githubStep: null,
     githubCursor: 0,
+    confirmStep: null,
+    upgradeLoading: false,
+    aiHistory: [],
+    activeProvider: 'glm',
   };
 
   let knowledge = null;
@@ -38,8 +42,19 @@ function createAppState() {
     // knowledge unavailable — continue without it
   }
 
+  // Load saved provider from config
+  readConfig().then(cfg => {
+    if (cfg.aiProvider) {
+      state.activeProvider = cfg.aiProvider;
+    }
+    if (cfg.theme) {
+      themeState.current = cfg.theme;
+    }
+  }).catch(() => {});
+
   function disableAI() {
     state.aiMode = false;
+    state.aiHistory = [];
     state.messages.push({ text: 'AI: off', type: 'system' });
   }
 
@@ -50,6 +65,7 @@ function createAppState() {
     const cmd = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
     if (state.aiMode && (cmd === 'exit' || cmd === 'ai')) {
       state.aiMode = false;
+      state.aiHistory = [];
       state.messages.push({ text: 'Exited AI mode.', type: 'system' });
       return { output: null, shouldExit: false, shouldClear: false };
     }
@@ -62,10 +78,12 @@ function createAppState() {
         if (knowledge) {
           messages.push({ role: 'system', content: knowledge });
         }
+        messages.push(...state.aiHistory);
         messages.push({ role: 'user', content: input });
 
         const cfg = await readConfig();
-        const providerId = cfg.aiProvider || 'glm-free';
+        const providerId = cfg.aiProvider || 'glm';
+        state.activeProvider = providerId;
         const apiKey = cfg[`ai.${providerId}Key`] || process.env.GLM_API_KEY;
 
         if (!apiKey && providerId !== 'ollama') {
@@ -75,7 +93,10 @@ function createAppState() {
         const { queryWithProvider } = require('../integrations/ai-providers/registry');
         const response = await queryWithProvider(providerId, input, { apiKey, messages });
 
-        const prefix = providerId === 'glm-free' || providerId === 'glm-pro' ? 'GLM' : providerId;
+        state.aiHistory.push({ role: 'user', content: input });
+        state.aiHistory.push({ role: 'assistant', content: response });
+
+        const prefix = providerId === 'glm' ? 'GLM' : providerId;
         state.messages.push({ text: `${prefix}: ${response}`, type: 'ai' });
       } catch (err) {
         state.messages.push({ text: `AI error: ${err.message}`, type: 'ai-error' });
@@ -85,7 +106,14 @@ function createAppState() {
       return { output: null, shouldExit: false, shouldClear: false };
     }
 
+    // Set upgrade loading before async dispatch
+    const cmdName = trimmed.startsWith('/') ? trimmed.slice(1).split(/\s+/)[0] : trimmed.split(/\s+/)[0];
+    if (cmdName === 'upgrade') {
+      state.upgradeLoading = true;
+    }
+
     const result = await registry.dispatch(input);
+    state.upgradeLoading = false;
 
     if (result.shouldClear) {
       state.messages.length = 0; // mutate in-place so external refs stay valid
@@ -94,7 +122,9 @@ function createAppState() {
 
     if (result.shouldToggleAI) {
       state.aiMode = !state.aiMode;
-      const label = state.aiMode ? 'AI: ON — type a question, /exit to leave AI mode' : 'AI: off';
+      const label = state.aiMode
+        ? `AI: ON (${state.activeProvider}) — type a question, /exit to leave AI mode`
+        : 'AI: off';
       state.messages.push({ text: label, type: 'system' });
       if (result.output) {
         state.messages.push({ text: result.output, type: 'ai' });
@@ -122,6 +152,16 @@ function createAppState() {
       state.modelStep = 'token';
       state.modelProvider = result.modelProvider;
       state.messages.push({ text: `Enter your ${result.modelProvider} API key:`, type: 'system' });
+      return result;
+    }
+
+    if (result.needsConfirm) {
+      state.confirmStep = {
+        message: result.confirmMessage,
+        onConfirm: result.onConfirm,
+        onCancel: result.onCancel,
+      };
+      state.messages.push({ text: result.output, type: 'system' });
       return result;
     }
 
@@ -232,6 +272,28 @@ function createAppState() {
     state.modelProvider = null;
   }
 
+  async function confirmAction() {
+    if (!state.confirmStep) return { output: null, shouldExit: false, shouldClear: false };
+    const { onConfirm } = state.confirmStep;
+    state.confirmStep = null;
+    const result = await onConfirm();
+    if (result.output) {
+      state.messages.push({ text: result.output, type: 'system' });
+    }
+    return result;
+  }
+
+  function confirmCancel() {
+    if (!state.confirmStep) return;
+    const { onCancel } = state.confirmStep;
+    state.confirmStep = null;
+    const result = onCancel();
+    if (result.output) {
+      state.messages.push({ text: result.output, type: 'system' });
+    }
+    return result;
+  }
+
   function markSetupDone() {
     state.setupInstalled = true;
   }
@@ -241,6 +303,7 @@ function createAppState() {
       themeName: themeState.current,
       aiMode: state.aiMode,
       version: VERSION,
+      activeProvider: state.activeProvider,
     };
   }
 
@@ -283,6 +346,10 @@ function createAppState() {
     get modelStep() { return state.modelStep; },
     get modelProvider() { return state.modelProvider; },
     get aiLoading() { return state.aiLoading; },
+    get upgradeLoading() { return state.upgradeLoading; },
+    get confirmStep() { return state.confirmStep; },
+    confirmAction,
+    confirmCancel,
     markSetupDone,
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,
