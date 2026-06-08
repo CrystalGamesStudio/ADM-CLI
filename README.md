@@ -23,8 +23,8 @@ curl -fsSL https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scr
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap crystalgames/tap
-brew install crystalgames/tap/adm
+brew tap CrystalGamesStudio/tap
+brew install CrystalGamesStudio/tap/adm
 ```
 
 ### Windows (PowerShell)
