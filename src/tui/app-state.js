@@ -7,7 +7,7 @@ const { getKnowledge } = require('../ai/knowledge');
 const VERSION = 'v0.2.0';
 const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /setup to install developer tools.';
 
-function createAppState() {
+function createAppState(onReady) {
   const config = {};
   const themeState = { current: 'dark' };
   const theme = resolveTheme(config);
@@ -42,7 +42,7 @@ function createAppState() {
     // knowledge unavailable — continue without it
   }
 
-  // Load saved provider from config
+  // Load saved provider from config, then trigger re-render
   readConfig().then(cfg => {
     if (cfg.aiProvider) {
       state.activeProvider = cfg.aiProvider;
@@ -50,6 +50,7 @@ function createAppState() {
     if (cfg.theme) {
       themeState.current = cfg.theme;
     }
+    if (onReady) onReady();
   }).catch(() => {});
 
   function disableAI() {

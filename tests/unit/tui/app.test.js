@@ -146,7 +146,14 @@ describe('App state — /theme switches theme and updates colors', () => {
   });
 
   test('/theme cyberpunk updates themeState.current', async () => {
-    const state = createAppState();
+    jest.resetModules();
+    jest.doMock('../../../src/config', () => ({
+      readConfig: jest.fn(() => Promise.resolve({})),
+      writeConfig: jest.fn(() => Promise.resolve()),
+      ensureConfigDir: jest.fn(),
+    }));
+    const { createAppState: createState } = require('../../../src/tui/app-state');
+    const state = createState();
     await state.processInput('/theme cyberpunk');
 
     expect(state.themeState.current).toBe('cyberpunk');

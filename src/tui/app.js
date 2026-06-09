@@ -10,7 +10,7 @@ function createApp(ink) {
   const SetupScreen = createSetupScreen(ink);
 
   return function App() {
-    const stateRef = React.useRef(createAppState());
+    const stateRef = React.useRef(createAppState(rerender));
     _lastAppState = stateRef.current;
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
