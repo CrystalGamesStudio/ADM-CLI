@@ -10,8 +10,7 @@ function createApp(ink) {
   const SetupScreen = createSetupScreen(ink);
 
   return function App() {
-    const rerenderRef = React.useRef(null);
-    const stateRef = React.useRef(createAppState(() => rerenderRef.current && rerenderRef.current()));
+    const stateRef = React.useRef(createAppState());
     _lastAppState = stateRef.current;
     const [messages, setMessages] = React.useState(stateRef.current.messages);
     const [input, setInput] = React.useState('');
@@ -19,12 +18,10 @@ function createApp(ink) {
     const [spinnerFrame, setSpinnerFrame] = React.useState(0);
     const { exit } = useApp();
 
-    rerenderRef.current = () => {
+    const rerender = () => {
       setMessages([...stateRef.current.messages]);
       setShowSetup(stateRef.current.showSetup);
     };
-
-    const rerender = rerenderRef.current;
 
     React.useEffect(() => {
       if (!stateRef.current.aiLoading && !stateRef.current.upgradeLoading) return;

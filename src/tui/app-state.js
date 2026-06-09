@@ -3,13 +3,25 @@ const { resolveTheme } = require('../ui/theme');
 const { readConfig, writeConfig } = require('../config');
 const ai = require('../integrations/ai-backend');
 const { getKnowledge } = require('../ai/knowledge');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const VERSION = 'v0.2.0';
 const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /setup to install developer tools.';
 
-function createAppState(onReady) {
+function createAppState() {
+  // Load saved config synchronously for correct initial state (no re-render needed)
+  let savedTheme = 'dark';
+  let savedProvider = 'glm';
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.adm', 'config.json'), 'utf8'));
+    if (cfg.theme) savedTheme = cfg.theme;
+    if (cfg.aiProvider) savedProvider = cfg.aiProvider;
+  } catch {}
+
   const config = {};
-  const themeState = { current: 'dark' };
+  const themeState = { current: savedTheme };
   const theme = resolveTheme(config);
   const registry = createRegistry({ theme: themeState, execSync: null });
 
@@ -32,7 +44,7 @@ function createAppState(onReady) {
     confirmStep: null,
     upgradeLoading: false,
     aiHistory: [],
-    activeProvider: 'glm',
+    activeProvider: savedProvider,
   };
 
   let knowledge = null;
@@ -41,17 +53,6 @@ function createAppState(onReady) {
   } catch {
     // knowledge unavailable — continue without it
   }
-
-  // Load saved provider from config, then trigger re-render
-  readConfig().then(cfg => {
-    if (cfg.aiProvider) {
-      state.activeProvider = cfg.aiProvider;
-    }
-    if (cfg.theme) {
-      themeState.current = cfg.theme;
-    }
-    if (onReady) onReady();
-  }).catch(() => {});
 
   function disableAI() {
     state.aiMode = false;
