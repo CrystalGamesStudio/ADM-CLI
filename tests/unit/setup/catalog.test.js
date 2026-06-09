@@ -2,9 +2,9 @@ const { loadCatalog, getToolsByCategories } = require('../../../src/setup/catalo
 
 describe('catalog', () => {
   describe('loadCatalog', () => {
-    test('returns exactly 10 categories', () => {
+    test('returns exactly 11 categories', () => {
       const categories = loadCatalog();
-      expect(categories).toHaveLength(10);
+      expect(categories).toHaveLength(11);
     });
 
     test('each category has id, name, icon, and tools array', () => {
@@ -22,7 +22,7 @@ describe('catalog', () => {
       const categories = loadCatalog();
       const ids = categories.map(c => c.id).sort();
       expect(ids).toEqual([
-        'c-cpp', 'csharp-dotnet', 'go', 'java', 'js-ts',
+        'artificial-intelligence', 'c-cpp', 'csharp-dotnet', 'go', 'java', 'js-ts',
         'php', 'python', 'ruby', 'rust', 'universal',
       ]);
     });

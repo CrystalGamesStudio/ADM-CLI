@@ -16,10 +16,10 @@ describe('SetupScreen', () => {
     expect(typeof SetupScreen).toBe('function');
   });
 
-  test('initial state has 10 categories loaded', () => {
+  test('initial state has 11 categories loaded', () => {
     const { createSetupState } = require('../../../../src/tui/components/SetupScreen');
     const state = createSetupState();
-    expect(state.categories).toHaveLength(10);
+    expect(state.categories).toHaveLength(11);
     expect(state.step).toBe('categories');
     expect(state.selectedCategories).toEqual([]);
     expect(state.selectedTools).toEqual([]);

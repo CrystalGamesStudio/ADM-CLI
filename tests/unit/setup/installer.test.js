@@ -11,15 +11,15 @@ describe('installer', () => {
         { id: 'vite', name: 'Vite', installMethod: 'npm' },
         'darwin',
       );
-      expect(cmd).toBe('npm install -g vite');
+      expect(cmd).toBe('npm install -g vite@latest');
     });
 
-    test('npm maps to "npm install -g <tool>" on linux', () => {
+    test('npm maps to "npm install -g <tool>@latest" on linux', () => {
       const cmd = getInstallCommand(
         { id: 'vite', name: 'Vite', installMethod: 'npm' },
         'linux',
       );
-      expect(cmd).toBe('npm install -g vite');
+      expect(cmd).toBe('npm install -g vite@latest');
     });
 
     test('brew maps to "brew install <tool>" on darwin', () => {
@@ -43,7 +43,7 @@ describe('installer', () => {
         { id: 'black', name: 'Black', installMethod: 'pip' },
         'darwin',
       );
-      expect(cmd).toBe('pip install black');
+      expect(cmd).toBe('pip install --upgrade black');
     });
 
     test('cargo maps to "cargo install <tool>"', () => {
