@@ -314,6 +314,45 @@
         { "id": "snyk", "name": "Snyk", "installMethod": "npm" },
         { "id": "sonarqube", "name": "SonarQube Scanner", "installMethod": "brew" }
       ]
+    },
+    {
+      "id": "artificial-intelligence",
+      "name": "Artificial Intelligence",
+      "icon": "💻",
+      "tools": [
+        { "id": "@anthropic-ai/claude-code", "name": "Claude Code", "installMethod": "npm", "command": "claude" },
+        { "id": "@openai/codex", "name": "OpenAI Codex CLI", "installMethod": "npm", "command": "codex" },
+        { "id": "aider-chat", "name": "Aider", "installMethod": "pip", "command": "aider" },
+        { "id": "@githubnext/github-copilot-cli", "name": "GitHub Copilot CLI", "installMethod": "npm", "command": "github-copilot-cli" },
+        { "id": "@anthropic-ai/gemini-cli", "name": "Google Gemini CLI", "installMethod": "npm", "command": "gemini" },
+        { "id": "amazon-q-developer-cli", "name": "Amazon Q Developer CLI", "installMethod": "pip", "command": "q" },
+        { "id": "@plandex/cli", "name": "Plandex", "installMethod": "npm", "command": "plandex" },
+        { "id": "mentat", "name": "Mentat", "installMethod": "pip", "command": "mentat" },
+        { "id": "openhands", "name": "OpenHands CLI", "installMethod": "pip", "command": "openhands" },
+        { "id": "sweagent", "name": "SWE-agent", "installMethod": "pip", "command": "sweagent" },
+        { "id": "gpt-engineer", "name": "GPT Engineer", "installMethod": "pip", "command": "gpt-engineer" },
+        { "id": "smol-developer", "name": "Smol Developer", "installMethod": "npm", "command": "smol-dev" },
+        { "id": "llm", "name": "LLM (Simon Willison)", "installMethod": "pip", "command": "llm" },
+        { "id": "ollama", "name": "Ollama", "installMethod": "brew", "command": "ollama" },
+        { "id": "shell-gpt", "name": "Shell-GPT (sgpt)", "installMethod": "pip", "command": "sgpt" },
+        { "id": "aichat", "name": "AIChat", "installMethod": "cargo", "command": "aichat" },
+        { "id": "bito", "name": "Bito CLI", "installMethod": "npm", "command": "bito" },
+        { "id": "copilot-ext", "name": "GitHub Copilot (IDE)", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=GitHub.copilot" },
+        { "id": "claude-ide-ext", "name": "Claude for IDE", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code" },
+        { "id": "continue-ext", "name": "Continue", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=Continue.continue" },
+        { "id": "tabnine-ext", "name": "Tabnine", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode" },
+        { "id": "codeium-ext", "name": "Codeium", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=Codeium.codeium" },
+        { "id": "cody-ext", "name": "Sourcegraph Cody", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=sourcegraph.cody-ai" },
+        { "id": "supermaven-ext", "name": "Supermaven", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=supermaven.supermaven-vscode" },
+        { "id": "blackbox-ext", "name": "Blackbox AI", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=Blackboxapp.blackbox" },
+        { "id": "codegeex-ext", "name": "CodeGeeX", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=aminer.codegeex" },
+        { "id": "askcodi-ext", "name": "AskCodi", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=AskCodi.askcodi" },
+        { "id": "safurai-ext", "name": "Safurai", "installMethod": "link", "url": "https://plugins.jetbrains.com/plugin/23446-safurai" },
+        { "id": "pieces-ext", "name": "Pieces for Developers", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=MeshIntelligentTechnologiesInc.pieces-vscode" },
+        { "id": "mutable-ext", "name": "Mutable AI", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=MutableAI.mutableai" },
+        { "id": "twinny-ext", "name": "Twinny", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=rjmacarthy.twinny" },
+        { "id": "localpilot-ext", "name": "LocalPilot", "installMethod": "link", "url": "https://marketplace.visualstudio.com/items?itemName=shengchen.localpilot" }
+      ]
     }
   ]
 }

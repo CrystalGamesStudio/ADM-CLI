@@ -101,13 +101,18 @@ function getInstallCommand(tool, platform) {
     manual: `# Manual install required for ${id}`,
   };
 
+  if (method === 'link') {
+    return `echo 'Visit: ${tool.url || tool.id}'`;
+  }
+
   return commands[method] || `# Unknown install method: ${method}`;
 }
 
 function isToolInstalled(tool, checkFn) {
   const check = checkFn || execSync;
+  const cmd = tool.command || tool.id;
   try {
-    check(`command -v ${tool.id} >/dev/null 2>&1`, { shell: '/bin/bash', stdio: 'pipe' });
+    check(`command -v ${cmd} >/dev/null 2>&1`, { shell: '/bin/bash', stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -115,6 +120,10 @@ function isToolInstalled(tool, checkFn) {
 }
 
 async function installToolAsync(tool, platform) {
+  if (tool.installMethod === 'link') {
+    return { id: tool.id, name: tool.name, status: 'link', message: `Visit marketplace: ${tool.url || 'N/A'}` };
+  }
+
   if (isToolInstalled(tool)) {
     return { id: tool.id, name: tool.name, status: 'skipped', message: 'already installed' };
   }
