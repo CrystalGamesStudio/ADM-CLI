@@ -84,9 +84,9 @@ function getInstallCommand(tool, platform) {
   const id = tool.id;
 
   const commands = {
-    npm: `npm install -g ${id}`,
+    npm: `npm install -g ${id}@latest`,
     brew: platform === 'darwin' ? `brew install ${id}` : `sudo apt-get install -y ${id}`,
-    pip: `pip install ${id}`,
+    pip: `pip install --upgrade ${id}`,
     cargo: `cargo install ${id}`,
     go: `go install ${id}@latest`,
     gem: `gem install ${id}`,
@@ -94,8 +94,8 @@ function getInstallCommand(tool, platform) {
     dotnet: `dotnet tool install -g ${id}`,
     script: `curl -fsSL ${SCRIPT_URLS[id] || 'https://example.com/install'} | sh`,
     nvm: `curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash`,
-    node: `npm install -g ${id}`,
-    python: `python3 -m pip install ${id}`,
+    node: `npm install -g ${id}@latest`,
+    python: `python3 -m pip install --upgrade ${id}`,
     rustup: `rustup component add ${id}`,
     apt: `sudo apt-get install -y ${id}`,
     manual: `# Manual install required for ${id}`,
