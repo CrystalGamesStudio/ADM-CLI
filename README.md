@@ -1,8 +1,8 @@
 # ADM CLI
 
-**ADM** is a developer-focused CLI tool that automates environment setup on new machines and provides an AI-powered daily assistant for development workflows. It targets Node.js/web developers on macOS, Linux, and Windows, reducing initial dev setup from hours to minutes while staying available as an intelligent companion throughout development.
+**ADM** is a TUI-only developer tool that automates environment setup on new machines and provides an AI-powered daily assistant for development workflows. One command — `adm` — opens a full-screen terminal interface where everything happens: AI chat, setup, GitHub/GitLab management, tool installation, and configuration.
 
-ADM v2 features a full-screen TUI (ink + React). One command — `adm` — opens an OpenCode-like interface where everything happens: AI chat, setup, GitHub/GitLab management, tool installation, and configuration.
+Targets Node.js/web developers on macOS, Linux, and Windows — reducing initial dev setup from hours to minutes while staying available as an intelligent companion throughout development.
 
 ---
 
@@ -43,16 +43,16 @@ irm https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/in
 # Launch full-screen TUI
 adm
 
-# Run interactive setup wizard
-adm setup
-
 # Inside the TUI:
-/help          — Show all commands
-/ai            — Toggle AI mode (blue input, chat with GLM)
-/ai <question> — One-off AI query without toggling mode
+/help            — Show all commands
+/ai              — Toggle AI mode (blue input, chat with GLM)
+/ai <question>   — One-off AI query without toggling mode
+/github status   — GitHub status
+/gitlab status   — GitLab status
+/download        — Launch extension setup wizard
+/feedback        — Open feedback page in browser
 /theme cyberpunk — Switch theme
-/status        — Git status
-/exit          — Quit ADM
+/exit            — Quit ADM
 ```
 
 ---
@@ -66,9 +66,16 @@ adm setup
 | `/clear` | Clear message history |
 | `/theme` | List or switch themes (dark, light, cyberpunk, nord, forest, monokai) |
 | `/config` | Show current configuration |
-| `/status` | Show git status |
 | `/ai` | Toggle AI mode ON/OFF — input turns blue, questions go to GLM API |
 | `/ai <question>` | One-off AI query without toggling mode |
+| `/model` | Show or switch AI provider |
+| `/github` | GitHub operations: status, pr, issue, commit |
+| `/gitlab` | GitLab operations: status, mr, issue, commit |
+| `/download` | Launch extension setup wizard |
+| `/feedback` | Open feedback page in browser |
+| `/connect` | Connect to GitHub or GitLab |
+| `/dotfiles` | Sync dotfiles from repo |
+| `/upgrade` | Check for and install updates |
 
 ### AI Mode
 
@@ -80,23 +87,6 @@ When AI mode is ON (`/ai`):
 - Press `Esc` or type `exit` to leave AI mode
 
 AI knowledge system: on first run, ADM reads its own docs (README, PRD) and caches a compact summary in `~/.adm/ai-knowledge.json`. This knowledge is injected as a system message in every AI query, so the AI knows about ADM itself. Cache auto-updates when ADM version changes.
-
----
-
-## CLI Commands
-
-```
-adm setup          Run interactive setup wizard
-adm installers     Plan or run environment installers
-adm connect        Manage service connections (github, gitlab)
-adm pr             Manage pull requests (list, draft, comment)
-adm mr             Manage merge requests on GitLab
-adm issue-list     List issues from GitHub / GitLab
-adm dotfiles       Manage dotfiles sync
-adm clock          ASCII clock
-adm theme          Choose a color theme
-adm uninstall      Remove ADM config and references
-```
 
 ---
 
@@ -164,25 +154,12 @@ Single `adm` command launches an ink-based terminal UI with:
 dark (default), light, cyberpunk, nord, forest, monokai — switch with `/theme <name>`
 
 ### GitHub & GitLab Integration
-- PR/MR listing, creation, commenting
-- Issue listing with filters
+- `/github` — PR listing, creation, commenting, issues
+- `/gitlab` — MR listing, creation, commenting, issues
 - Secure token storage (OS keychain on macOS, encrypted file on Linux)
 
-### Plugin System
-Drop `.js` files in `~/.adm/plugins/` — each exports `{ execute(args, context) }` to add custom commands.
-
-### Dotfiles Sync
-Clone/sync dotfiles from a git repo, apply symlinks or copies for `.bashrc`, `.zshrc`, `.gitconfig`, `.ssh/config`.
-
----
-
-## Setup Wizard
-
-```bash
-adm setup
-```
-
-Interactive wizard that installs:
+### Extension Setup Wizard
+`/download` launches an interactive wizard that installs:
 - Node.js (via nvm wrapper)
 - Package managers (pnpm, npm)
 - Build tools (Vite, esbuild)
@@ -190,6 +167,15 @@ Interactive wizard that installs:
 - SSH keys (ED25519)
 - Git config (user.name, user.email)
 - Dotfiles sync from repo
+
+### Feedback
+`/feedback` opens the feedback page in your default browser.
+
+### Plugin System
+Drop `.js` files in `~/.adm/plugins/` — each exports `{ execute(args, context) }` to add custom commands.
+
+### Dotfiles Sync
+`/dotfiles sync` — clone/sync dotfiles from a git repo, apply symlinks or copies for `.bashrc`, `.zshrc`, `.gitconfig`, `.ssh/config`.
 
 ---
 
