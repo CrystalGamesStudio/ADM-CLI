@@ -9,6 +9,7 @@ const BUILTIN_COMMANDS = [
   { name: 'clear', description: 'Clear message history' },
   { name: 'theme', description: 'List or switch themes' },
   { name: 'github', description: 'GitHub operations: status, pr, issue, commit', subcommands: ['status', 'pr', 'issue', 'commit'] },
+  { name: 'gitlab', description: 'GitLab operations: status, mr, issue, commit', subcommands: ['status', 'mr', 'issue', 'commit'] },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
   { name: 'model', description: 'Show or switch AI provider', subcommands: ['<provider-id>'] },
   { name: 'download', description: 'Launch extension setup wizard' },
@@ -76,6 +77,9 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'github') {
       return await dispatchGithub(args, context);
+    }
+    if (cmdName === 'gitlab') {
+      return await dispatchGitlab(args, context);
     }
     if (cmdName === 'ai') {
       return dispatchAi(args, context);
@@ -389,7 +393,118 @@ async function dispatchGithub(args, context) {
   return { output: chalk.yellow(`Usage: /github <status|pr|issue|commit>`), shouldExit: false, shouldClear: false };
 }
 
-// ─── /connect ──────────────────────────────────────────────
+// ─── /gitlab ───────────────────────────────────────────────
+async function dispatchGitlab(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return { output: chalk.yellow('Usage: /gitlab <status|mr|issue|commit>'), shouldExit: false, shouldClear: false };
+  }
+
+  if (subcommand === 'status') {
+    return dispatchStatus(context);
+  }
+
+  if (subcommand === 'mr') {
+    const mrArgs = parts.slice(1).join(' ');
+    return await dispatchGitlabMr(mrArgs || 'list', context);
+  }
+
+  if (subcommand === 'issue') {
+    const issueArgs = parts.slice(1).join(' ');
+    return await dispatchGitlabIssue(issueArgs || 'list', context);
+  }
+
+  if (subcommand === 'commit') {
+    const commitArgs = parts.slice(1).join(' ');
+    return await dispatchCommit(commitArgs, context);
+  }
+
+  return { output: chalk.yellow('Usage: /gitlab <status|mr|issue|commit>'), shouldExit: false, shouldClear: false };
+}
+
+// ─── /gitlab mr ────────────────────────────────────────────
+async function dispatchGitlabMr(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand) {
+    return { output: chalk.yellow('Usage: /gitlab mr <list|draft|comment>'), shouldExit: false, shouldClear: false };
+  }
+
+  const gl = require('../../integrations/gitlab');
+
+  if (subcommand === 'list') {
+    try {
+      const mrs = await gl.listMRs();
+      if (mrs.length === 0) {
+        return { output: chalk.yellow('No open merge requests found.'), shouldExit: false, shouldClear: false };
+      }
+      const lines = mrs.map(mr =>
+        `  ${chalk.bold(`!${mr.iid}`)} ${mr.title}\n    ${chalk.gray(mr.url)}`
+      );
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'draft') {
+    const title = parts.slice(1).join(' ');
+    if (!title) {
+      return { output: chalk.yellow('Usage: /gitlab mr draft <title>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      const result = await gl.createDraftMR(title);
+      return {
+        output: chalk.green(`Draft MR !${result.iid} created\n  ${chalk.gray(result.url)}`),
+        shouldExit: false,
+        shouldClear: false,
+      };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  if (subcommand === 'comment') {
+    const mrIid = parts[1];
+    const message = parts.slice(2).join(' ');
+    if (!mrIid || !message) {
+      return { output: chalk.yellow('Usage: /gitlab mr comment <iid> <message>'), shouldExit: false, shouldClear: false };
+    }
+    try {
+      await gl.commentOnMR(mrIid, message);
+      return { output: chalk.green(`Comment added to MR !${mrIid}`), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown MR subcommand: ${subcommand}. Type /gitlab mr <list|draft|comment>`), shouldExit: false, shouldClear: false };
+}
+
+// ─── /gitlab issue ─────────────────────────────────────────
+async function dispatchGitlabIssue(args, context) {
+  const parts = (args || '').trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!subcommand || subcommand === 'list') {
+    const gl = require('../../integrations/gitlab');
+    try {
+      const issues = await gl.listIssues();
+      if (issues.length === 0) {
+        return { output: chalk.yellow('No issues found.'), shouldExit: false, shouldClear: false };
+      }
+      const lines = issues.map(i => `  ${chalk.bold(`#${i.iid}`)} ${i.title}\n    ${chalk.gray(i.url)}`);
+      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
+    } catch (err) {
+      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
+    }
+  }
+
+  return { output: chalk.yellow(`Unknown issue subcommand: ${subcommand}. Type /gitlab issue list`), shouldExit: false, shouldClear: false };
+}
 async function dispatchConnect(args, context) {
   const parts = (args || '').trim().split(/\s+/);
   const subcommand = parts[0];
