@@ -31,10 +31,9 @@ describe('adm (no args) launches TUI', () => {
   });
 });
 
-describe('adm assistant (explicit) still works', () => {
-  test('explicit "adm assistant" command is still registered', () => {
-    const result = adm(['assistant', '--help']);
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('assistant');
+describe('adm assistant is removed', () => {
+  test('adm assistant returns non-zero exit code', () => {
+    const result = adm(['assistant']);
+    expect(result.status).not.toBe(0);
   });
 });

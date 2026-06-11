@@ -27,7 +27,7 @@ describe('TUI App state', () => {
     const bar = state.getStatusBar();
     expect(bar.themeName).toBeTruthy();
     expect(bar.aiMode).toBe(false);
-    expect(bar.version).toMatch(/v0\.2\.0/);
+    expect(bar.version).toMatch(/Crystal ADM-CLI \d+\.\d+\.\d+/);
   });
 
   test('processInput adds command output to messages', async () => {

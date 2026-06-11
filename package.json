@@ -1,6 +1,6 @@
 {
   "name": "@crystalgames/adm",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "ADM developer CLI — environment setup, GitHub integration, and AI-powered daily assistant",
   "license": "MIT",
   "repository": {

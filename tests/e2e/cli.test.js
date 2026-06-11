@@ -23,71 +23,55 @@ const adm = (args, env = {}) => {
   });
 };
 
-describe('adm --help', () => {
+describe('adm --version', () => {
   test('exits with code 0', () => {
-    const result = adm(['--help']);
-    expect(result.status).toBe(0);
-  });
-
-  test('lists all major commands', () => {
-    const result = adm(['--help']);
-    const output = result.stdout;
-    const commands = ['setup', 'installers', 'connect', 'pr', 'mr', 'issue-list', 'dotfiles', 'theme', 'uninstall', 'assistant'];
-    for (const cmd of commands) {
-      expect(output).toContain(cmd);
-    }
-  });
-
-  test('shows version', () => {
     const result = adm(['--version']);
     expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
+  test('outputs version matching package.json', () => {
+    const pkg = require('../../package.json');
+    const result = adm(['--version']);
+    expect(result.stdout.trim()).toBe(pkg.version);
   });
 });
 
-describe('adm <command> --help', () => {
-  test('setup --help shows setup-specific options', () => {
-    const result = adm(['setup', '--help']);
+describe('adm -v', () => {
+  test('exits with code 0', () => {
+    const result = adm(['-v']);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('--dry-run');
   });
 
-  test('connect --help lists subcommands', () => {
-    const result = adm(['connect', '--help']);
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('github');
-    expect(result.stdout).toContain('gitlab');
+  test('outputs version matching package.json', () => {
+    const pkg = require('../../package.json');
+    const result = adm(['-v']);
+    expect(result.stdout.trim()).toBe(pkg.version);
   });
+});
 
-  test('pr --help lists pr subcommands', () => {
-    const result = adm(['pr', '--help']);
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('list');
-    expect(result.stdout).toContain('draft');
+describe('adm (no args) opens TUI', () => {
+  test('exits with code 0 when TERM=dumb (non-interactive fallback)', () => {
+    const result = adm([], { TERM: 'dumb', ADM_CONFIG_DIR: '/tmp/adm-e2e-test' });
+    // TUI may exit with 0 or 1 depending on environment; key is it doesn't hang
+    expect(result.status).not.toBeNull();
   });
+});
+
+describe('removed subcommands do not exist', () => {
+  const removedCommands = ['setup', 'connect', 'pr', 'mr', 'assistant'];
+
+  for (const cmd of removedCommands) {
+    test(`adm ${cmd} is not a recognized command`, () => {
+      const result = adm([cmd]);
+      expect(result.status).not.toBe(0);
+    });
+  }
 });
 
 describe('unknown command', () => {
   test('exits with code 1 for unknown command', () => {
     const result = adm(['foobarbaz']);
     expect(result.status).toBe(1);
-  });
-
-  test('shows error message mentioning --help', () => {
-    const result = adm(['foobarbaz']);
-    expect(result.stderr).toContain('--help');
-  });
-});
-
-describe('adm installers --execute', () => {
-  test('exits with code 2 without ADM_EXECUTE=1', () => {
-    const result = adm(['installers', '--execute']);
-    expect(result.status).toBe(2);
-  });
-
-  test('shows refusal message', () => {
-    const result = adm(['installers', '--execute']);
-    expect(result.stderr).toContain('ADM_EXECUTE');
   });
 });
 

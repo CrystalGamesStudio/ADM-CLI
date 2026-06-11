@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = 'v0.2.0';
+const VERSION = `Crystal ADM-CLI ${require('../../package.json').version}`;
 const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /setup to install developer tools.';
 
 function createAppState() {

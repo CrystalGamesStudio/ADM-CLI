@@ -242,7 +242,7 @@ function createApp(ink) {
           React.createElement(Text, { color: tc.muted }, ' │ '),
           React.createElement(Text, { color: tc.accent }, 'Setup Wizard'),
           React.createElement(Text, { color: tc.muted }, ' │ '),
-          React.createElement(Text, { color: tc.warning }, `ADM ${bar.version}`),
+          React.createElement(Text, { color: tc.warning }, bar.version),
         ),
         React.createElement(SetupScreen, {
           onExit: () => {
@@ -267,7 +267,7 @@ function createApp(ink) {
         React.createElement(Text, { color: tc.muted }, ' │ '),
         React.createElement(Text, { color: aiMode ? tc.success : tc.muted }, `AI: ${aiMode ? 'ON' : 'off'}${providerLabel}`),
         React.createElement(Text, { color: tc.muted }, ' │ '),
-        React.createElement(Text, { color: tc.warning }, `ADM ${bar.version}`),
+        React.createElement(Text, { color: tc.warning }, bar.version),
       ),
       // Messages
       React.createElement(
