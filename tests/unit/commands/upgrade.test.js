@@ -56,8 +56,8 @@ describe('/upgrade command', () => {
     const result = await upgrade();
 
     expect(result.shouldExit).toBe(false);
-    expect(result.output).toMatch(/Already up to date/);
-    expect(result.output).toMatch(/0\.1\.0/);
+    // Spinner renders the "Already up to date" message, output is empty
+    expect(result.output).toBe('');
   });
 
   test('update available — returns needsConfirm with version info', async () => {
