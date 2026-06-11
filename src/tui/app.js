@@ -165,19 +165,27 @@ function createApp(ink) {
         return;
       }
 
-      // Tab — autocomplete command
-      if (key.tab) {
-        if (!stateRef.current.aiMode && input.startsWith('/')) {
-          const suggestions = stateRef.current.getSuggestions(input);
-          if (suggestions.length === 1) {
-            setInput('/' + suggestions[0] + ' ');
-          }
-        }
+      const ac = stateRef.current.autocomplete;
+
+      // Arrow keys — navigate autocomplete when visible
+      if (key.upArrow && ac.visible) {
+        stateRef.current.moveAutocompleteUp();
+        rerender();
+        return;
+      }
+      if (key.downArrow && ac.visible) {
+        stateRef.current.moveAutocompleteDown();
+        rerender();
         return;
       }
 
-      // Esc — exit AI mode (does NOT quit app)
+      // Esc — close autocomplete if visible, else exit AI mode
       if (key.escape) {
+        if (ac.visible) {
+          stateRef.current.closeAutocomplete();
+          rerender();
+          return;
+        }
         stateRef.current.exitAI();
         rerender();
         return;
@@ -188,7 +196,37 @@ function createApp(ink) {
         return;
       }
 
+      // Tab — fill prompt with selected command
+      if (key.tab) {
+        if (ac.visible && ac.items.length > 0) {
+          const selected = stateRef.current.selectAutocompleteActive();
+          if (selected) {
+            setInput(selected + ' ');
+            stateRef.current.closeAutocomplete();
+            rerender();
+          }
+        }
+        return;
+      }
+
       if (key.return) {
+        // If autocomplete is visible, execute selected command immediately
+        if (ac.visible && ac.items.length > 0) {
+          const selected = stateRef.current.selectAutocompleteActive();
+          if (selected) {
+            const cmd = selected.trim();
+            stateRef.current.messages.push({ text: cmd, type: 'user' });
+            stateRef.current.closeAutocomplete();
+            setInput('');
+            rerender();
+            const result = await stateRef.current.processInput(cmd);
+            rerender();
+            if (result.shouldExit) {
+              exit();
+            }
+          }
+          return;
+        }
         const trimmed = input.trim();
         if (trimmed === '') return;
         stateRef.current.messages.push({ text: trimmed, type: 'user' });
@@ -206,19 +244,30 @@ function createApp(ink) {
       }
 
       if (key.backspace || key.delete) {
-        setInput(prev => prev.slice(0, -1));
+        const next = input.slice(0, -1);
+        setInput(next);
+        if (!next.startsWith('/')) {
+          stateRef.current.closeAutocomplete();
+        } else {
+          stateRef.current.updateAutocomplete(next);
+        }
+        rerender();
         return;
       }
 
       if (ch && !key.ctrl && !key.meta) {
-        setInput(prev => prev + ch);
+        const next = input + ch;
+        setInput(next);
+        if (!stateRef.current.aiMode && next.startsWith('/')) {
+          stateRef.current.updateAutocomplete(next);
+          rerender();
+        }
       }
     });
 
     const bar = stateRef.current.getStatusBar();
     const aiMode = bar.aiMode;
     const providerLabel = bar.activeProvider ? ` (${bar.activeProvider})` : '';
-    const suggestions = !aiMode && input.startsWith('/') ? stateRef.current.getSuggestions(input) : [];
 
     // Resolve theme colors from current theme name
     const themeName = stateRef.current.themeState.current;
@@ -335,12 +384,6 @@ function createApp(ink) {
         React.createElement(Text, { color: tc.warning }, `${stateRef.current.confirmStep.message} [y/N] `),
         React.createElement(Text, { dimColor: true }, '█'),
       ),
-      // Suggestions
-      suggestions.length > 0 && React.createElement(
-        Box,
-        { paddingX: 1 },
-        React.createElement(Text, { dimColor: true, color: tc.accent }, suggestions.map(s => `/${s}`).join('  ')),
-      ),
       // Input bar — hidden during confirmation prompt
       !stateRef.current.confirmStep && (() => {
         const connectToken = stateRef.current.connectStep === 'token';
@@ -360,6 +403,23 @@ function createApp(ink) {
           placeholder && React.createElement(Text, { dimColor: true, color: tc.muted }, placeholder),
         );
       })(),
+      // Autocomplete list — below input bar
+      stateRef.current.autocomplete.visible && stateRef.current.autocomplete.items.length > 0 && React.createElement(
+        Box,
+        { flexDirection: 'column', paddingX: 1 },
+        ...stateRef.current.autocomplete.items.map((item, i) => {
+          const active = i === stateRef.current.autocomplete.selectedIndex;
+          return React.createElement(
+            Box,
+            { key: item.name },
+            React.createElement(Text, { bold: true, color: active ? tc.accent : tc.muted },
+              active ? '  ● /' + item.name : '  ○ /' + item.name),
+            React.createElement(Text, { color: active ? tc.text : tc.muted },
+              '  ' + item.description),
+          );
+        }),
+        React.createElement(Text, { dimColor: true, color: tc.muted }, '  ↑↓ navigate · Tab select · Enter run · ESC close'),
+      ),
     );
   };
 }

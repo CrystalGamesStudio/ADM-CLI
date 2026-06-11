@@ -115,7 +115,11 @@ function createRegistry(context = {}) {
     return cmd ? cmd.subcommands : undefined;
   }
 
-  return { dispatch, autocomplete, commands, getSubcommands };
+  function getCommandInfo(name) {
+    return commands.get(name) || null;
+  }
+
+  return { dispatch, autocomplete, commands, getSubcommands, getCommandInfo };
 }
 
 function dispatchHelp(commands) {

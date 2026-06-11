@@ -3,6 +3,7 @@ const { resolveTheme } = require('../ui/theme');
 const { readConfig, writeConfig } = require('../config');
 const ai = require('../integrations/ai-backend');
 const { getKnowledge } = require('../ai/knowledge');
+const { createAutocomplete, updateAutocomplete, moveUp, moveDown, selectActive, closeAutocomplete } = require('./autocomplete');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -20,10 +21,15 @@ function createAppState() {
     if (cfg.aiProvider) savedProvider = cfg.aiProvider;
   } catch {}
 
-  const config = {};
+  const config = { theme: savedTheme };
   const themeState = { current: savedTheme };
   const theme = resolveTheme(config);
   const registry = createRegistry({ theme: themeState, execSync: null });
+
+  const ac = createAutocomplete(
+    (partial) => registry.autocomplete(partial),
+    (name) => registry.getCommandInfo(name),
+  );
 
   const state = {
     messages: [{ text: WELCOME_TEXT, type: 'system' }],
@@ -356,6 +362,12 @@ function createAppState() {
     get setupInstalled() { return state.setupInstalled; },
     getSuggestions,
     getPlaceholder,
+    autocomplete: ac,
+    updateAutocomplete: (input) => updateAutocomplete(ac, input),
+    moveAutocompleteUp: () => moveUp(ac),
+    moveAutocompleteDown: () => moveDown(ac),
+    selectAutocompleteActive: () => selectActive(ac),
+    closeAutocomplete: () => closeAutocomplete(ac),
   };
 }
 
