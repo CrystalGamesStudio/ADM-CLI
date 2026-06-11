@@ -1,8 +1,8 @@
 class Adm < Formula
   desc "ADM developer CLI — environment setup, GitHub integration, and AI-powered assistant"
   homepage "https://github.com/CrystalGamesStudio/ADM-CLI"
-  url "https://registry.npmjs.org/@crystalgames/adm/-/adm-0.2.0.tgz"
-  sha256 "e6279a22f44d1dc008e5494fcf11129dc9e6cbe3b6d9b5af59a7069ac582c995"
+  url "https://registry.npmjs.org/@crystalgames/adm/-/adm-0.2.1.tgz"
+  sha256 "PLACEHOLDER"
   license "MIT"
 
   depends_on "node"
