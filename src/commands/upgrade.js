@@ -1,7 +1,42 @@
 const { spawn } = require('child_process');
 const chalk = require('chalk');
-const ora = require('ora');
 const { version: currentVersion } = require('../../package.json');
+
+const FRAMES = ['◢', '◣', '◤', '◥'];
+
+function createLoader(text) {
+  let i = 0;
+  let active = true;
+  const interval = setInterval(() => {
+    i = (i + 1) % FRAMES.length;
+    process.stdout.write(`\r${chalk.cyan(FRAMES[i])} ${text}`);
+  }, 80);
+
+  return {
+    update(t) { text = t; },
+    succeed(msg) {
+      active = false;
+      clearInterval(interval);
+      process.stdout.write(`\r${chalk.green('✔')} ${msg || text}\n`);
+    },
+    fail(msg) {
+      active = false;
+      clearInterval(interval);
+      process.stdout.write(`\r${chalk.red('✖')} ${msg || text}\n`);
+    },
+    info(msg) {
+      active = false;
+      clearInterval(interval);
+      process.stdout.write(`\r${chalk.yellow('ℹ')} ${msg || text}\n`);
+    },
+    stop() {
+      if (!active) return;
+      active = false;
+      clearInterval(interval);
+      process.stdout.write('\r' + ' '.repeat((text || '').length + 4) + '\r');
+    },
+  };
+}
 
 function runSpawn(cmd, args) {
   return new Promise((resolve, reject) => {
@@ -18,7 +53,7 @@ function runSpawn(cmd, args) {
 }
 
 async function upgrade() {
-  const spinner = ora({ text: 'Checking for updates...', color: 'cyan' }).start();
+  const spinner = createLoader('Checking for updates...');
 
   let latestVersion;
   try {
@@ -49,7 +84,7 @@ async function upgrade() {
     needsConfirm: true,
     confirmMessage: `Update available: v${currentVersion} → v${latestVersion}`,
     async onConfirm() {
-      const installSpinner = ora({ text: `Updating to v${latestVersion}...`, color: 'cyan' }).start();
+      const installSpinner = createLoader(`Updating to v${latestVersion}...`);
       try {
         await runSpawn('npm', ['install', '-g', '@crystalgames/adm@latest']);
         installSpinner.succeed(chalk.green(`Updated to v${latestVersion}`));
