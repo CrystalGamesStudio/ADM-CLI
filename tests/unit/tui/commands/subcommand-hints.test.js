@@ -32,8 +32,8 @@ describe('getSubcommands', () => {
     expect(subs).toEqual(['<provider-id>']);
   });
 
-  test('returns subcommands for mr', () => {
-    expect(registry.getSubcommands('mr')).toEqual(['list', 'draft', 'comment']);
+  test('returns subcommands for gitlab', () => {
+    expect(registry.getSubcommands('gitlab')).toEqual(['status', 'mr', 'issue', 'commit']);
   });
 
   test('returns subcommands for dotfiles', () => {

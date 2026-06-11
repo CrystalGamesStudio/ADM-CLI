@@ -15,7 +15,6 @@ const BUILTIN_COMMANDS = [
   { name: 'download', description: 'Launch extension setup wizard' },
   { name: 'feedback', description: 'Open feedback page in browser' },
   { name: 'connect', description: 'Connect to GitHub or GitLab', subcommands: ['github', 'gitlab', 'list', 'disconnect'] },
-  { name: 'mr', description: 'Merge request operations (GitLab)', subcommands: ['list', 'draft', 'comment'] },
   { name: 'dotfiles', description: 'Sync dotfiles from repo', subcommands: ['sync'] },
   { name: 'uninstall', description: 'Remove ADM CLI config' },
   { name: 'upgrade', description: 'Check for and install updates' },
@@ -95,9 +94,6 @@ function createRegistry(context = {}) {
     }
     if (cmdName === 'connect') {
       return await dispatchConnect(args, context);
-    }
-    if (cmdName === 'mr') {
-      return await dispatchMr(args, context);
     }
     if (cmdName === 'dotfiles') {
       return await dispatchDotfiles(args, context);
@@ -660,66 +656,6 @@ async function dispatchPr(args, context) {
   }
 
   return { output: chalk.yellow(`Unknown PR subcommand: ${subcommand}. Type /pr list, /pr draft <title>, or /pr comment <pr> <msg>`), shouldExit: false, shouldClear: false };
-}
-
-// ─── /mr ───────────────────────────────────────────────────
-async function dispatchMr(args, context) {
-  const parts = (args || '').trim().split(/\s+/);
-  const subcommand = parts[0];
-
-  if (!subcommand) {
-    return { output: chalk.yellow('Usage: /mr <list|draft|comment>'), shouldExit: false, shouldClear: false };
-  }
-
-  const gl = require('../../integrations/gitlab');
-
-  if (subcommand === 'list') {
-    try {
-      const mrs = await gl.listMRs();
-      if (mrs.length === 0) {
-        return { output: chalk.yellow('No open merge requests found.'), shouldExit: false, shouldClear: false };
-      }
-      const lines = mrs.map(mr =>
-        `  ${chalk.bold(`!${mr.iid}`)} ${mr.title}\n    ${chalk.gray(mr.url)}`
-      );
-      return { output: lines.join('\n'), shouldExit: false, shouldClear: false };
-    } catch (err) {
-      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
-    }
-  }
-
-  if (subcommand === 'draft') {
-    const title = parts.slice(1).join(' ');
-    if (!title) {
-      return { output: chalk.yellow('Usage: /mr draft <title>'), shouldExit: false, shouldClear: false };
-    }
-    try {
-      const result = await gl.createDraftMR(title);
-      return {
-        output: chalk.green(`Draft MR created: ${result.url}`),
-        shouldExit: false,
-        shouldClear: false,
-      };
-    } catch (err) {
-      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
-    }
-  }
-
-  if (subcommand === 'comment') {
-    const mrIid = parts[1];
-    const message = parts.slice(2).join(' ');
-    if (!mrIid || !message) {
-      return { output: chalk.yellow('Usage: /mr comment <iid> <message>'), shouldExit: false, shouldClear: false };
-    }
-    try {
-      await gl.commentOnMR(mrIid, message);
-      return { output: chalk.green(`Comment added to MR !${mrIid}`), shouldExit: false, shouldClear: false };
-    } catch (err) {
-      return { output: chalk.red(err.message), shouldExit: false, shouldClear: false };
-    }
-  }
-
-  return { output: chalk.yellow(`Unknown MR subcommand: ${subcommand}. Type /mr list, /mr draft <title>, or /mr comment <mr> <msg>`), shouldExit: false, shouldClear: false };
 }
 
 // ─── /issue ────────────────────────────────────────────────

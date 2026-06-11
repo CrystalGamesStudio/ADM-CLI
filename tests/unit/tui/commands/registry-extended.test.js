@@ -198,59 +198,6 @@ describe('/pr command redirects to /github', () => {
   });
 });
 
-// ─── /mr ───────────────────────────────────────────────────
-describe('/mr command in TUI', () => {
-  let registry;
-
-  beforeEach(() => {
-    registry = createRegistry({});
-    jest.clearAllMocks();
-  });
-
-  test('/mr list shows formatted MRs', async () => {
-    gitlab.listMRs.mockResolvedValue([
-      { iid: 7, title: 'Fix pipeline', url: 'https://gitlab.com/x/adm/-/merge_requests/7' },
-    ]);
-
-    const result = await registry.dispatch('/mr list');
-
-    expect(result.output).toMatch(/!7/);
-    expect(result.output).toMatch(/Fix pipeline/);
-  });
-
-  test('/mr list with no MRs shows message', async () => {
-    gitlab.listMRs.mockResolvedValue([]);
-
-    const result = await registry.dispatch('/mr list');
-
-    expect(result.output).toMatch(/no open merge requests/i);
-  });
-
-  test('/mr draft <title> creates draft MR', async () => {
-    gitlab.createDraftMR.mockResolvedValue({ url: 'https://gitlab.com/x/adm/-/merge_requests/10' });
-
-    const result = await registry.dispatch('/mr draft refactor auth');
-
-    expect(result.output).toMatch(/Draft MR created/);
-    expect(gitlab.createDraftMR).toHaveBeenCalledWith('refactor auth');
-  });
-
-  test('/mr comment <iid> <msg> comments on MR', async () => {
-    gitlab.commentOnMR.mockResolvedValue({});
-
-    const result = await registry.dispatch('/mr comment 5 nice work');
-
-    expect(result.output).toMatch(/!5/);
-    expect(gitlab.commentOnMR).toHaveBeenCalledWith('5', 'nice work');
-  });
-
-  test('/mr without subcommand shows usage', async () => {
-    const result = await registry.dispatch('/mr');
-
-    expect(result.output).toMatch(/usage/i);
-  });
-});
-
 // ─── /issue (via /github) ──────────────────────────────────
 describe('/issue command redirects to /github', () => {
   let registry;
