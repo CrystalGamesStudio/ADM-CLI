@@ -96,7 +96,7 @@ main() {
   ok "Installation complete!"
   echo ""
   echo -e "  Run ${BOLD}adm${RESET} to launch the TUI."
-  echo -e "  Run ${BOLD}adm setup${RESET} to configure your dev environment."
+  echo -e "  Type ${BOLD}/download${RESET} inside ADM to set up your dev environment."
   echo ""
 }
 

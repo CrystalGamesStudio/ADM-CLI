@@ -60,7 +60,7 @@ Write-Host "  Installation complete!" -ForegroundColor Green
 Write-Host "  Run " -NoNewline
 Write-Host "adm" -ForegroundColor White -NoNewline
 Write-Host " to launch the TUI."
-Write-Host "  Run " -NoNewline
-Write-Host "adm setup" -ForegroundColor White -NoNewline
-Write-Host " to configure your dev environment."
+Write-Host "  Type " -NoNewline
+Write-Host "/download" -ForegroundColor White -NoNewline
+Write-Host " inside ADM to set up your dev environment."
 Write-Host ""
