@@ -11,7 +11,8 @@ const BUILTIN_COMMANDS = [
   { name: 'github', description: 'GitHub operations: status, pr, issue, commit', subcommands: ['status', 'pr', 'issue', 'commit'] },
   { name: 'ai', description: 'Toggle AI mode or ask a question' },
   { name: 'model', description: 'Show or switch AI provider', subcommands: ['<provider-id>'] },
-  { name: 'setup', description: 'Launch extension setup wizard' },
+  { name: 'download', description: 'Launch extension setup wizard' },
+  { name: 'feedback', description: 'Open feedback page in browser' },
   { name: 'connect', description: 'Connect to GitHub or GitLab', subcommands: ['github', 'gitlab', 'list', 'disconnect'] },
   { name: 'mr', description: 'Merge request operations (GitLab)', subcommands: ['list', 'draft', 'comment'] },
   { name: 'dotfiles', description: 'Sync dotfiles from repo', subcommands: ['sync'] },
@@ -82,8 +83,11 @@ function createRegistry(context = {}) {
     if (cmdName === 'model') {
       return await dispatchModel(args, context);
     }
-    if (cmdName === 'setup') {
-      return dispatchSetup(args);
+    if (cmdName === 'download') {
+      return dispatchDownload(args);
+    }
+    if (cmdName === 'feedback') {
+      return dispatchFeedback(args, context);
     }
     if (cmdName === 'connect') {
       return await dispatchConnect(args, context);
@@ -318,7 +322,7 @@ function findClosestMatch(input, commands, maxDist = 2) {
   return bestDist <= maxDist ? best : null;
 }
 
-function dispatchSetup(args) {
+function dispatchDownload(args) {
   const isDryRun = args === '--dry-run';
   return {
     output: isDryRun ? chalk.cyan('Setup dry-run mode — showing planned actions') : null,
@@ -326,6 +330,26 @@ function dispatchSetup(args) {
     shouldExit: false,
     shouldClear: false,
     dryRun: isDryRun,
+  };
+}
+
+const FEEDBACK_URL = 'https://crystalgames.studio/#/contact';
+
+function dispatchFeedback(args, context) {
+  return {
+    output: chalk.cyan('Otworzyć stronę w przeglądarce? (Y/n)'),
+    needsConfirm: true,
+    confirmMessage: 'Open feedback page',
+    async onConfirm(deps = {}) {
+      const openUrl = deps.openUrl || require('../../utils/open-url').openUrl;
+      await openUrl(FEEDBACK_URL);
+      return { output: chalk.green('Opened feedback page.'), shouldExit: false, shouldClear: false };
+    },
+    onCancel(deps = {}) {
+      return { output: chalk.gray('Cancelled.'), shouldExit: false, shouldClear: false };
+    },
+    shouldExit: false,
+    shouldClear: false,
   };
 }
 

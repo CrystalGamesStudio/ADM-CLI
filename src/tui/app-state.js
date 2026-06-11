@@ -9,7 +9,7 @@ const path = require('path');
 const os = require('os');
 
 const VERSION = `Crystal ADM-CLI ${require('../../package.json').version}`;
-const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /setup to install developer tools.';
+const WELCOME_TEXT = 'Welcome to ADM! Type /help for commands or /download to install developer tools.';
 
 function createAppState() {
   // Load saved config synchronously for correct initial state (no re-render needed)
