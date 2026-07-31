@@ -4,7 +4,7 @@ set -euo pipefail
 # ── ADM CLI Installer ──────────────────────────────────────
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/installer.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/CrystalPlatforms/ADM-CLI/main/scripts/installer.sh | sh
 #   bash scripts/installer.sh [--dry-run] [-y|--yes]
 #
 
@@ -62,7 +62,7 @@ main() {
     echo -e "${YELLOW}  DRY RUN — no changes will be made${RESET}"
     echo ""
     echo "  Planned actions:"
-    echo "    1. Run 'npm install -g @crystalgames/adm'"
+    echo "    1. Run 'npm install -g @crystalplatforms/adm'"
     echo "    2. Verify 'adm --version'"
     exit 0
   fi
@@ -74,15 +74,15 @@ main() {
   fi
 
   # ── Install globally ──────────────────────────────────────
-  info "Installing @crystalgames/adm globally..."
+  info "Installing @crystalplatforms/adm globally..."
 
   if [ "$(id -u)" = "0" ]; then
-    npm install -g @crystalgames/adm
+    npm install -g @crystalplatforms/adm
   elif [ -w "$(npm config get prefix)" ]; then
-    npm install -g @crystalgames/adm
+    npm install -g @crystalplatforms/adm
   else
     warn "npm global prefix is not writable. Using sudo..."
-    sudo npm install -g @crystalgames/adm
+    sudo npm install -g @crystalplatforms/adm
   fi
 
   # ── Verify ────────────────────────────────────────────────

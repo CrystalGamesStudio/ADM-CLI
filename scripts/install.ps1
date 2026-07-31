@@ -1,5 +1,5 @@
 # ADM CLI Installer for Windows
-# Usage: irm https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/CrystalPlatforms/ADM-CLI/main/scripts/install.ps1 | iex
 # Or:    powershell -ExecutionPolicy Bypass -File install.ps1
 
 $ErrorActionPreference = "Stop"
@@ -38,13 +38,13 @@ try {
 }
 
 # 4. Install globally
-Write-Host "  [INFO] Installing @crystalgames/adm globally..." -ForegroundColor Cyan
+Write-Host "  [INFO] Installing @crystalplatforms/adm globally..." -ForegroundColor Cyan
 
 try {
-    npm install -g @crystalgames/adm
+    npm install -g @crystalplatforms/adm
 } catch {
     Write-Host "  [WARN] npm install failed. Trying with elevated privileges..." -ForegroundColor Yellow
-    Start-Process npm -ArgumentList "install", "-g", "@crystalgames/adm" -Verb RunAs -Wait
+    Start-Process npm -ArgumentList "install", "-g", "@crystalplatforms/adm" -Verb RunAs -Wait
 }
 
 # 5. Verify

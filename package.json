@@ -1,15 +1,15 @@
 {
-  "name": "@crystalgames/adm",
+  "name": "@crystalplatforms/adm",
   "version": "0.2.3",
   "description": "ADM developer CLI — environment setup, GitHub integration, and AI-powered daily assistant",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CrystalGamesStudio/ADM-CLI.git"
+    "url": "git+https://github.com/CrystalPlatforms/ADM-CLI.git"
   },
-  "homepage": "https://github.com/CrystalGamesStudio/ADM-CLI#readme",
+  "homepage": "https://github.com/CrystalPlatforms/ADM-CLI#readme",
   "bugs": {
-    "url": "https://github.com/CrystalGamesStudio/ADM-CLI/issues"
+    "url": "https://github.com/CrystalPlatforms/ADM-CLI/issues"
   },
   "bin": {
     "adm": "bin/adm"

@@ -11,26 +11,26 @@ Targets Node.js/web developers on macOS, Linux, and Windows — reducing initial
 ### npm (recommended)
 
 ```bash
-npm install -g @crystalgames/adm
+npm install -g @crystalplatforms/adm
 ```
 
 ### macOS / Linux (curl)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/installer.sh | sh
+curl -fsSL https://raw.githubusercontent.com/CrystalPlatforms/ADM-CLI/main/scripts/installer.sh | sh
 ```
 
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap CrystalGamesStudio/tap
-brew install CrystalGamesStudio/tap/adm
+brew tap CrystalPlatforms/tap
+brew install CrystalPlatforms/tap/adm
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/CrystalGamesStudio/ADM-CLI/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/CrystalPlatforms/ADM-CLI/main/scripts/install.ps1 | iex
 ```
 
 **Prerequisites:** Node.js 18+ must be installed. The curl and PowerShell installers will check for this and provide installation instructions if missing.
